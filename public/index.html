@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACT Terapi Eğitim Platformu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Playfair+Display:wght@400;600&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #0f0e0c;
+    --surface:  #1a1916;
+    --surface2: #232220;
+    --border:   #2e2c29;
+    --border2:  #3d3b37;
+    --text:     #e8e4dc;
+    --text2:    #9e9a92;
+    --text3:    #5c5a55;
+    --accent:   #c8a96e;
+    --accent2:  #8fb89a;
+    --danger:   #c97070;
+    --info:     #7099c9;
+    --mono:     'IBM Plex Mono', monospace;
+    --serif:    'Source Serif 4', serif;
+    --display:  'Playfair Display', serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:var(--serif); font-size:15px; line-height:1.7; min-height:100vh; display:flex; overflow:hidden; }
+
+  /* SIDEBAR */
+  .sidebar { width:220px; min-width:220px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; height:100vh; overflow-y:auto; }
+  .logo { padding:22px 20px 18px; border-bottom:1px solid var(--border); }
+  .logo-title { font-family:var(--display); font-size:17px; font-weight:600; color:var(--accent); line-height:1.3; }
+  .logo-sub { font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:.12em; text-transform:uppercase; margin-top:4px; }
+  .nav-section { padding:14px 0 6px; }
+  .nav-label { font-family:var(--mono); font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--text3); padding:0 16px 8px; }
+  .nav-item { display:flex; align-items:center; gap:9px; padding:9px 16px; cursor:pointer; transition:all .15s; font-size:13.5px; color:var(--text2); border-left:2px solid transparent; }
+  .nav-item:hover { background:var(--surface2); color:var(--text); }
+  .nav-item.active { color:var(--accent); border-left-color:var(--accent); background:rgba(200,169,110,.06); }
+  .nav-icon { font-size:14px; width:18px; text-align:center; flex-shrink:0; }
+  .disclaimer { margin-top:auto; padding:14px; border-top:1px solid var(--border); font-size:10px; color:var(--text3); line-height:1.5; font-family:var(--mono); }
+
+  /* MAIN */
+  .main { flex:1; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+  .header { padding:16px 28px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--surface); min-height:58px; }
+  .header-title { font-family:var(--display); font-size:16px; color:var(--text); }
+  .header-meta { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:.08em; }
+
+  /* VIEWS */
+  .view { display:none; height:100%; flex-direction:column; }
+  .view.active { display:flex; }
+  #home-view { display:block; height:auto; overflow-y:auto; padding:40px 36px; }
+  #home-view.active { display:block; }
+
+  /* HOME */
+  .home-heading { font-family:var(--display); font-size:28px; font-weight:600; color:var(--text); margin-bottom:6px; }
+  .home-sub { color:var(--text2); font-style:italic; margin-bottom:36px; font-size:14.5px; }
+  .modules-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; }
+  .module-card { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:22px 20px; cursor:pointer; transition:all .2s; position:relative; overflow:hidden; }
+  .module-card::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:var(--accent); opacity:0; transition:opacity .2s; }
+  .module-card:hover { border-color:var(--border2); background:var(--surface2); }
+  .module-card:hover::before { opacity:1; }
+  .module-icon { font-size:22px; margin-bottom:10px; }
+  .module-title { font-family:var(--display); font-size:15px; font-weight:600; color:var(--text); margin-bottom:6px; }
+  .module-desc { font-size:12.5px; color:var(--text2); line-height:1.55; }
+
+  /* CHAT */
+  .chat-container { display:flex; flex-direction:column; height:100%; }
+  .session-banner { background:var(--surface2); border-bottom:1px solid var(--border); padding:10px 24px; display:flex; align-items:center; justify-content:space-between; }
+  .client-info { display:flex; align-items:center; gap:12px; }
+  .client-avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--accent),#8b6f3a); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .client-name { font-size:13.5px; font-weight:600; color:var(--text); }
+  .client-issue { font-size:11px; color:var(--text2); font-style:italic; }
+  .session-controls { display:flex; gap:8px; align-items:center; }
+  .btn { font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; padding:7px 14px; border-radius:3px; cursor:pointer; border:1px solid var(--border2); background:transparent; color:var(--text2); transition:all .15s; }
+  .btn:hover { border-color:var(--accent); color:var(--accent); }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--bg); }
+  .btn.primary:hover { opacity:.85; }
+  .btn.danger { border-color:var(--danger); color:var(--danger); }
+  .messages { flex:1; overflow-y:auto; padding:24px 28px; display:flex; flex-direction:column; gap:14px; }
+  .msg { display:flex; flex-direction:column; max-width:78%; }
+  .msg.therapist { align-self:flex-end; align-items:flex-end; }
+  .msg.client { align-self:flex-start; align-items:flex-start; }
+  .msg.system { align-self:center; max-width:90%; }
+  .msg-label { font-family:var(--mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--text3); margin-bottom:4px; padding:0 4px; }
+  .msg-bubble { padding:12px 16px; border-radius:4px; font-size:14px; line-height:1.65; }
+  .msg.therapist .msg-bubble { background:rgba(200,169,110,.12); border:1px solid rgba(200,169,110,.25); color:var(--text); border-bottom-right-radius:1px; }
+  .msg.client .msg-bubble { background:var(--surface2); border:1px solid var(--border); color:var(--text); border-bottom-left-radius:1px; }
+  .msg.system .msg-bubble { background:rgba(143,184,154,.08); border:1px solid rgba(143,184,154,.2); color:var(--text2); font-size:13px; text-align:center; font-style:italic; }
+  .typing-indicator { display:none; align-self:flex-start; padding:12px 16px; background:var(--surface2); border:1px solid var(--border); border-radius:4px; border-bottom-left-radius:1px; }
+  .typing-indicator.visible { display:flex; align-items:center; gap:5px; }
+  .dot { width:6px; height:6px; border-radius:50%; background:var(--text3); animation:bounce 1.2s infinite; }
+  .dot:nth-child(2) { animation-delay:.2s; }
+  .dot:nth-child(3) { animation-delay:.4s; }
+  @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+  .input-area { padding:16px 24px; border-top:1px solid var(--border); background:var(--surface); display:flex; gap:10px; align-items:flex-end; }
+  .message-input { flex:1; background:var(--surface2); border:1px solid var(--border2); border-radius:4px; padding:11px 14px; font-family:var(--serif); font-size:14px; color:var(--text); resize:none; min-height:44px; max-height:120px; outline:none; transition:border-color .15s; line-height:1.55; }
+  .message-input:focus { border-color:var(--accent); }
+  .message-input::placeholder { color:var(--text3); }
+  .send-btn { background:var(--accent); border:none; border-radius:4px; width:44px; height:44px; cursor:pointer; color:var(--bg); font-size:16px; transition:opacity .15s; flex-shrink:0; }
+  .send-btn:hover { opacity:.85; }
+  .send-btn:disabled { opacity:.4; cursor:not-allowed; }
+  .msg-counter { font-family:var(--mono); font-size:10px; color:var(--text3); }
+  .supervisor-hint { font-family:var(--mono); font-size:10px; color:var(--accent); animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+  /* SUPERVISOR PANEL */
+  .supervisor-overlay { display:none; position:fixed; top:0; right:0; width:380px; height:100vh; background:var(--surface); border-left:1px solid var(--border); z-index:100; flex-direction:column; box-shadow:-8px 0 32px rgba(0,0,0,.4); }
+  .supervisor-overlay.open { display:flex; }
+  .supervisor-header { padding:18px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .supervisor-title { font-family:var(--display); font-size:15px; color:var(--accent2); }
+  .close-btn { background:none; border:none; color:var(--text3); cursor:pointer; font-size:18px; padding:2px 6px; transition:color .15s; }
+  .close-btn:hover { color:var(--text); }
+  .supervisor-body { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:16px; }
+  .feedback-section { background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:14px 16px; }
+  .feedback-section-title { font-family:var(--mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--text3); margin-bottom:8px; }
+  .feedback-section.good { border-left:3px solid var(--accent2); }
+  .feedback-section.warn { border-left:3px solid var(--accent); }
+  .feedback-section.bad { border-left:3px solid var(--danger); }
+  .feedback-section.info { border-left:3px solid var(--info); }
+  .feedback-text { font-size:12.5px; color:var(--text2); line-height:1.6; }
+  .feedback-list { list-style:none; }
+  .feedback-list li { font-size:12.5px; color:var(--text2); padding:2px 0; line-height:1.55; }
+  .feedback-list li::before { content:"→ "; color:var(--text3); }
+  .act-processes { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .process-item { display:flex; flex-direction:column; gap:4px; }
+  .process-label { font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:.06em; }
+  .process-bar-bg { height:5px; background:var(--border); border-radius:99px; overflow:hidden; }
+  .process-bar { height:100%; background:var(--accent); border-radius:99px; transition:width .6s ease; }
+
+  /* PROFILE SELECT */
+  .profile-select-screen { padding:36px 28px; display:flex; flex-direction:column; gap:16px; overflow-y:auto; }
+  .screen-title { font-family:var(--display); font-size:20px; color:var(--text); margin-bottom:4px; }
+  .screen-sub { font-size:13px; color:var(--text2); margin-bottom:8px; font-style:italic; }
+  .profile-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
+  .profile-card { background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:18px; cursor:pointer; transition:all .2s; }
+  .profile-card:hover { border-color:var(--accent); }
+  .profile-card-name { font-family:var(--display); font-size:15px; color:var(--text); margin-bottom:4px; }
+  .profile-card-issue { font-size:12px; color:var(--text2); margin-bottom:10px; line-height:1.5; }
+  .tag { font-family:var(--mono); font-size:9px; padding:3px 8px; border-radius:2px; letter-spacing:.08em; text-transform:uppercase; }
+  .tag.orta { background:rgba(200,169,110,.12); color:var(--accent); border:1px solid rgba(200,169,110,.2); }
+  .tag.yuksek { background:rgba(201,112,112,.1); color:var(--danger); border:1px solid rgba(201,112,112,.2); }
+  .tag.dusuk { background:rgba(143,184,154,.1); color:var(--accent2); border:1px solid rgba(143,184,154,.2); }
+
+  /* ACADEMY */
+  .academy-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; padding:28px; }
+  .topic-card { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:18px; cursor:pointer; transition:all .2s; text-align:center; }
+  .topic-card:hover { border-color:var(--accent); background:var(--surface2); }
+  .topic-icon { font-size:24px; margin-bottom:8px; }
+  .topic-name { font-size:13.5px; font-weight:600; color:var(--text); margin-bottom:4px; }
+  .topic-process { font-family:var(--mono); font-size:9px; color:var(--text3); letter-spacing:.08em; text-transform:uppercase; }
+  .academy-content { padding:28px 32px; overflow-y:auto; max-width:740px; }
+  .back-link { font-family:var(--mono); font-size:10px; color:var(--text3); cursor:pointer; letter-spacing:.08em; display:inline-flex; align-items:center; gap:6px; margin-bottom:20px; text-transform:uppercase; transition:color .15s; }
+  .back-link:hover { color:var(--accent); }
+  .academy-section { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:18px 20px; margin-bottom:14px; }
+  .academy-section-title { font-family:var(--mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--text3); margin-bottom:10px; }
+  .academy-section-content { font-size:13.5px; color:var(--text2); line-height:1.7; }
+
+  /* DIFFICULT MOMENTS */
+  .scenarios-list { padding:24px 28px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
+  .scenario-card { background:var(--surface); border:1px solid var(--border); border-radius:4px; padding:16px 18px; cursor:pointer; transition:all .2s; display:flex; align-items:flex-start; gap:14px; }
+  .scenario-card:hover { border-color:var(--danger); background:var(--surface2); }
+  .scenario-icon { font-size:20px; flex-shrink:0; }
+  .scenario-title { font-size:14px; font-weight:600; color:var(--text); margin-bottom:4px; }
+  .scenario-desc { font-size:12px; color:var(--text2); line-height:1.5; }
+
+  /* LOADING BAR */
+  .loading-bar { height:2px; background:var(--border); position:relative; overflow:hidden; flex-shrink:0; }
+  .loading-bar.active::after { content:''; position:absolute; top:0; left:-40%; width:40%; height:100%; background:var(--accent); animation:slide 1.2s infinite linear; }
+  @keyframes slide { to{left:140%} }
+
+  ::-webkit-scrollbar { width:5px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:99px; }
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-title">ACT Terapi<br>Simülatörü</div>
+    <div class="logo-sub">Eğitim Platformu</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Modüller</div>
+    <div class="nav-item active" onclick="showView('home')"><span class="nav-icon">⌂</span> Ana Sayfa</div>
+    <div class="nav-item" onclick="showView('session-select')"><span class="nav-icon">◎</span> Simüle Seans</div>
+    <div class="nav-item" onclick="showView('academy')"><span class="nav-icon">◈</span> ACT Akademi</div>
+    <div class="nav-item" onclick="showView('difficult')"><span class="nav-icon">△</span> Zor Anlar</div>
+    <div class="nav-item" onclick="showView('metaphor')"><span class="nav-icon">◇</span> Metafor Lab</div>
+    <div class="nav-item" onclick="showView('case')"><span class="nav-icon">☐</span> Vaka Formülasyonu</div>
+  </div>
+  <div class="disclaimer">⚠ Bu platform gerçek terapi değildir. Yalnızca eğitim amaçlıdır.</div>
+</nav>
+
+<main class="main">
+  <div class="loading-bar" id="loading-bar"></div>
+
+  <!-- HOME -->
+  <div id="home-view" class="view active" style="display:block; overflow-y:auto; padding:40px 36px;">
+    <div class="home-heading">Hoş geldin, Terapist Adayı.</div>
+    <div class="home-sub">Gerçek danışanlarla pratik yapmadan önce, burada güvenle dene, hata yap, öğren.</div>
+    <div class="modules-grid">
+      <div class="module-card" onclick="showView('session-select')">
+        <div class="module-icon">◎</div>
+        <div class="module-title">Simüle Seans</div>
+        <div class="module-desc">Gerçekçi bir danışanla ACT seansı yürüt. Her birkaç mesajda süpervizörden geri bildirim al.</div>
+      </div>
+      <div class="module-card" onclick="showView('academy')">
+        <div class="module-icon">◈</div>
+        <div class="module-title">ACT Akademi</div>
+        <div class="module-desc">Altı temel ACT sürecini öğren: açıklama, klinik uygulama, mini egzersiz ve vaka örnekleri.</div>
+      </div>
+      <div class="module-card" onclick="showView('difficult')">
+        <div class="module-icon">△</div>
+        <div class="module-title">Zor Anlar</div>
+        <div class="module-desc">Ağlayan, susan, kızan veya terapiyi bırakmak isteyen danışanlarla nasıl baş başa gelirsin?</div>
+      </div>
+      <div class="module-card" onclick="showView('metaphor')">
+        <div class="module-icon">◇</div>
+        <div class="module-title">Metafor Laboratuvarı</div>
+        <div class="module-desc">ACT metaforlarını hangi anda, nasıl kullanacağını senaryolarla öğren.</div>
+      </div>
+      <div class="module-card" onclick="showView('case')">
+        <div class="module-icon">☐</div>
+        <div class="module-title">Vaka Formülasyonu</div>
+        <div class="module-desc">ACT odaklı vaka formülasyonu yap, süpervizörden düzeltme al.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SESSION SELECT -->
+  <div id="session-select-view" class="view" style="display:none;">
+    <div class="header"><span class="header-title">Danışan Seç</span><span class="header-meta">Simüle Seans</span></div>
+    <div class="profile-select-screen">
+      <div>
+        <div class="screen-title">Kiminle çalışmak istiyorsun?</div>
+        <div class="screen-sub">Her danışanın farklı direnç düzeyi ve sorunu var.</div>
+      </div>
+      <div class="profile-cards" id="profile-cards"></div>
+    </div>
+  </div>
+
+  <!-- SESSION CHAT -->
+  <div id="session-view" class="view" style="display:none;">
+    <div class="chat-container">
+      <div class="session-banner">
+        <div class="client-info">
+          <div class="client-avatar" id="client-avatar">A</div>
+          <div>
+            <div class="client-name" id="client-name-label">—</div>
+            <div class="client-issue" id="client-issue-label">—</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span class="msg-counter" id="msg-counter">0 mesaj</span>
+          <span class="supervisor-hint" id="supervisor-hint" style="display:none">◉ Süpervizör hazır</span>
+          <div class="session-controls">
+            <button class="btn" onclick="requestSupervisorFeedback()">Süpervizör</button>
+            <button class="btn danger" onclick="endSession()">Seansı Bitir</button>
+          </div>
+        </div>
+      </div>
+      <div class="messages" id="messages">
+        <div class="msg system"><div class="msg-bubble">Seans başladı. Terapist olarak ilk adımı sen at.</div></div>
+      </div>
+      <div class="typing-indicator" id="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+      <div class="input-area">
+        <textarea class="message-input" id="message-input" placeholder="Terapist olarak ne söylemek istiyorsun?" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">→</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACADEMY -->
+  <div id="academy-view" class="view" style="display:none;">
+    <div class="header"><span class="header-title">ACT Akademi</span><span class="header-meta">6 Temel Süreç</span></div>
+    <div style="flex:1;overflow-y:auto;" id="academy-inner">
+      <div class="academy-grid">
+        <div class="topic-card" onclick="loadAcademy('kabul','Kabul')"><div class="topic-icon">🌊</div><div class="topic-name">Kabul</div><div class="topic-process">Acceptance</div></div>
+        <div class="topic-card" onclick="loadAcademy('bilişsel ayrışma','Bilişsel Ayrışma')"><div class="topic-icon">🔭</div><div class="topic-name">Bilişsel Ayrışma</div><div class="topic-process">Cognitive Defusion</div></div>
+        <div class="topic-card" onclick="loadAcademy('anda olma','Anda Olma')"><div class="topic-icon">◉</div><div class="topic-name">Anda Olma</div><div class="topic-process">Present Moment</div></div>
+        <div class="topic-card" onclick="loadAcademy('bağlam olarak benlik','Bağlam Olarak Benlik')"><div class="topic-icon">♾</div><div class="topic-name">Bağlam Olarak Benlik</div><div class="topic-process">Self-as-Context</div></div>
+        <div class="topic-card" onclick="loadAcademy('değerler','Değerler')"><div class="topic-icon">◈</div><div class="topic-name">Değerler</div><div class="topic-process">Values</div></div>
+        <div class="topic-card" onclick="loadAcademy('kararlı eylem','Kararlı Eylem')"><div class="topic-icon">→</div><div class="topic-name">Kararlı Eylem</div><div class="topic-process">Committed Action</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DIFFICULT MOMENTS -->
+  <div id="difficult-view" class="view" style="display:none;">
+    <div class="header"><span class="header-title">Zor Anlar</span><span class="header-meta">Müdahale Pratiği</span></div>
+    <div style="flex:1;overflow-y:auto;" id="difficult-inner">
+      <div class="scenarios-list" id="scenarios-list"></div>
+    </div>
+  </div>
+
+  <!-- METAPHOR LAB -->
+  <div id="metaphor-view" class="view" style="display:none;">
+    <div class="header">
+      <span class="header-title">Metafor Laboratuvarı</span>
+      <div style="display:flex;gap:6px;">
+        <button class="btn active-tab" id="tab-learn" onclick="switchMetaphorTab('learn')" style="font-size:10px;padding:5px 14px;">Öğren</button>
+        <button class="btn" id="tab-practice" onclick="switchMetaphorTab('practice')" style="font-size:10px;padding:5px 14px;">Pratik Yap</button>
+      </div>
+    </div>
+
+    <!-- ÖĞREN MODU -->
+    <div id="metaphor-learn" style="flex:1;overflow-y:auto;">
+      <div style="padding:24px 28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;" id="metaphor-cards-grid"></div>
+    </div>
+
+    <!-- PRATİK YAP MODU -->
+    <div id="metaphor-practice" style="flex:1;overflow-y:auto;padding:28px 32px;max-width:720px;display:none;">
+      <div style="font-family:var(--display);font-size:18px;color:var(--text);margin-bottom:6px;">Metafor Pratiği</div>
+      <div style="font-size:13px;color:var(--text2);font-style:italic;margin-bottom:20px;">Bir metafor seç, danışan senaryonu yaz — süpervizör nasıl kullanacağını göstersin.</div>
+      <div style="margin-bottom:16px;">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;">Metafor seç</div>
+        <select id="metaphor-select" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:10px 12px;font-family:var(--serif);font-size:13.5px;color:var(--text);outline:none;">
+          <option value="Otobüsteki Yolcular">Otobüsteki Yolcular</option>
+          <option value="Bataklık">Bataklık</option>
+          <option value="Deredeki Yapraklar">Deredeki Yapraklar</option>
+          <option value="Satranç Tahtası">Satranç Tahtası</option>
+          <option value="Gökyüzü ve Hava">Gökyüzü ve Hava</option>
+          <option value="Halat Çekme">Halat Çekme</option>
+          <option value="Pusula">Pusula</option>
+          <option value="Pano (Clipboard)">Pano (Clipboard)</option>
+          <option value="Eller Düşünceler Gibi">Eller Düşünceler Gibi</option>
+          <option value="Radyo Paraziti">Radyo Paraziti</option>
+          <option value="İki Dağ">İki Dağ</option>
+          <option value="Problem Çözme Makinesi">Problem Çözme Makinesi</option>
+        </select>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;">Danışan senaryosu</div>
+        <textarea id="metaphor-scenario" placeholder="Hangi durumda bu metaforu kullanmayı düşünüyorsun? Danışanın ne söylediğini, nerede takıldığını kısaca anlat..." style="width:100%;min-height:100px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:12px;font-family:var(--serif);font-size:14px;color:var(--text);outline:none;resize:vertical;line-height:1.6;"></textarea>
+      </div>
+      <button class="btn primary" onclick="loadMetaphor()">Rehberlik Al</button>
+      <div id="metaphor-result" style="margin-top:20px;"></div>
+    </div>
+  </div>
+
+  <!-- CASE FORMULATION -->
+  <div id="case-view" class="view" style="display:none;">
+    <div class="header"><span class="header-title">Vaka Formülasyonu</span><span class="header-meta">ACT Analizi</span></div>
+    <div style="flex:1;overflow-y:auto;padding:28px 32px;max-width:700px;">
+      <div style="font-family:var(--display);font-size:18px;color:var(--text);margin-bottom:6px;">ACT Vaka Formülasyonu</div>
+      <div style="font-size:13px;color:var(--text2);font-style:italic;margin-bottom:20px;">Vakayı analiz et, süpervizörden geri bildirim al.</div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div id="case-fields"></div>
+        <button class="btn primary" style="align-self:flex-start;" onclick="submitCase()">Formülasyonu Gönder</button>
+      </div>
+      <div id="case-result" style="margin-top:20px;"></div>
+    </div>
+  </div>
+</main>
+
+<!-- SUPERVISOR PANEL -->
+<div class="supervisor-overlay" id="supervisor-panel">
+  <div class="supervisor-header">
+    <span class="supervisor-title">Süpervizör Geri Bildirimi</span>
+    <button class="close-btn" onclick="closeSupervisor()">✕</button>
+  </div>
+  <div class="supervisor-body" id="supervisor-body">
+    <div style="font-size:13px;color:var(--text3);font-style:italic;text-align:center;margin-top:40px;">Analiz yükleniyor...</div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+const state = { currentProfile: null, messages: [], totalTherapistMsgs: 0 };
+
+// ── METAFOR VERİTABANI — Russ Harris, ACT Made Simple ─────────────────────
+const METAPHOR_DATA = [
+  {
+    id: 'passengers-on-bus',
+    name: 'Otobüsteki Yolcular',
+    icon: '🚌',
+    process: 'Kabul & Değerler',
+    processTag: 'Committed Action',
+    aciklama: 'Sen bir otobüsün sürücüsüsün. Otobüste çeşitli yolcular var — korkular, şüpheler, olumsuz düşünceler, acı anılar. Yolcular sana bağırıyor, yönlendirmeye çalışıyor. Ama otobüsü süren sensin. Yolcuları otobüsten atman gerekmiyor; onlar orada olabilir. Önemli olan hangi yöne gittiğin — değerlerin.',
+    ne_zaman: 'Danışan düşünce ve duygularının kendisini kontrol ettiğini hissediyorsa. "Kaygım izin vermedi" veya "Aklım bırakmadı" derken.',
+    ne_zaman_degil: 'Danışan henüz fusion\'ı anlamamışsa çok soyut gelebilir. Önce defusion çalışması gerekebilir.',
+    ornek_script: '"Şöyle düşün — sen bir otobüs sürücüsüsün. Yolcuların var; bazıları çok gürültücü. \'Buraya gitme!\', \'Başaramazsın!\' diye bağırıyorlar. Sen ne yaparsın? Onları susturmak için durup tartışabilirsin — ama otobüs durur. Ya da sürmaya devam edersin — yolcular gürültü yaparken bile. Değerlerin doğrultusunda."',
+    danisan_direnci: '"Ben otobüs değilim" derse: "Haklısın, bu bir benzetme. Asıl sorum şu: düşüncelerin seni yönlendiriyor mu, sen mi yönlendiriyorsun?"',
+    kitap_notu: 'Hayes & Harris\'in en çok kullandığı metaforlardan. Committed action ve değerler çalışmasında temel araç.',
+  },
+  {
+    id: 'quicksand',
+    name: 'Bataklık',
+    icon: '🌿',
+    process: 'Kabul',
+    processTag: 'Acceptance',
+    aciklama: 'Bataklığa düştüğünde içgüdün ne der? Çırpın, çık. Ama bataklıkta ne kadar çırpınırsan o kadar batarsın. Kabul ise uzanmak — yüzey alanını artırmak, bataklığa teslim olmak değil, onunla savaşmayı bırakmak.',
+    ne_zaman: 'Danışan duygularından kurtulmaya çalışarak daha çok sıkışıyorsa. Kaygıyla savaşan biri için mükemmel.',
+    ne_zaman_degil: 'Aktif kriz durumunda veya güvenlik sorunlarında kullanma. "Kendine zarar verme dürtüsünü kabul et" gibi yanlış anlaşılabilir.',
+    ornek_script: '"Bataklığa düştüğünü düşün. İçgüdün ne der? Çırpın, çık. Ama bataklıkta olan ne? Ne kadar çırpınırsan o kadar batarsın. Kaygınla olan da biraz böyle. Ne kadar savaşırsın, ne kadar \'gitsin\' dersen — o kadar büyüyor. Ya uzansan? Teslim olmak değil — savaşı bırakmak."',
+    danisan_direnci: '"Peki ne yapayım sadece oturup kabul mü edeyim?" derse: "Kabul etmek pasif değil. Bataklıkta uzanmak aktif bir harekettir — ve hayatta kalmanı sağlar."',
+    kitap_notu: 'Russ Harris\'in experiential avoidance\'ı açıkladığı en sevdiği metaforlardan biri.',
+  },
+  {
+    id: 'leaves-on-stream',
+    name: 'Deredeki Yapraklar',
+    icon: '🍂',
+    process: 'Bilişsel Ayrışma',
+    processTag: 'Cognitive Defusion',
+    aciklama: 'Gözlerini kapat. Önünde sakin bir dere akıyor. Her düşünceni bir yaprağa koy. Yaprak derede — sen kıyıdasın, izliyorsun. Yapraklar gelip geçiyor. Bazen hızlı, bazen yavaş. Yaprağı tutmaya ya da durdumaya çalışmıyorsun. Sadece izliyorsun.',
+    ne_zaman: 'Obsesif düşünceler, ruminasyon, takılan düşünceler için. Defusion\'ı experiential olarak öğretmek için.',
+    ne_zaman_degil: 'Danışan görselleştirme yapmakta zorlanıyorsa. Çok somut düşünen danışanlar için başka bir defusion tekniği dene.',
+    ornek_script: '"Şimdi seninle kısa bir egzersiz yapmak istiyorum. Gözlerini kapayabilirsin. Önünde sakin bir dere hayal et. Sular yavaşça akıyor. Şimdi aklına gelen her düşünceyi — hangi düşünce olursa olsun — bir yaprağa koy ve derede bırak. Yaprak akıp gidiyor. Sen kıyıda oturuyorsun, izliyorsun. Düşünceni tutmaya çalışma, durdurma da. Sadece izle."',
+    danisan_direnci: '"Düşünceler durmadı ki" derse: "Zaten durmasını istemiyoruz. Durmak zorunda değiller. Amaç onları durdurmak değil, onlarla ilişkini değiştirmek."',
+    kitap_notu: 'ACT\'in en klasik defusion egzersizlerinden. Mindfulness temelli, deneyimsel.',
+  },
+  {
+    id: 'chessboard',
+    name: 'Satranç Tahtası',
+    icon: '♟️',
+    process: 'Bağlam Olarak Benlik',
+    processTag: 'Self-as-Context',
+    aciklama: 'Bir satranç oyununu düşün. Beyaz taşlar ve siyah taşlar savaşıyor. Sen hangi taşsın? ACT\'te cevap: sen tahtasın. Taşlar — düşünceler, duygular, anılar — savaşabilir. Ama tahta kaybolmuyor, zarar görmüyor. Taşlar değişir, tahta kalır.',
+    ne_zaman: 'Kimlik krizi, "Ben kimim?" sorusu, öz-değer sorunlarında. Self-as-context\'i öğretmek için.',
+    ne_zaman_degil: 'İlk seanslarda çok soyut gelebilir. Önce "gözlemleyen benlik" kavramını basitçe anlat.',
+    ornek_script: '"Şöyle bir şey düşün. Satranç tahtasında taşlar savaşıyor — bazıları siyah, bazıları beyaz. Bu taşlar senin düşüncelerin ve duyguların. Peki sen kimsin? Bir taş mısın? Hayır — sen tahtasın. Taşlar gelir geçer, savaşır. Ama tahta hep orada. Zedelenmiyor, kaybolmuyor. İşte bu \'gözlemleyen benlik\' dediğimiz şey."',
+    danisan_direnci: '"Ben bir tahta değilim" derse: "Evet, bu bir benzetme. Ama şunu sor kendine: düşüncelerin değişiyor mu? Evet. Duyguların değişiyor mu? Evet. Peki onları izleyen bir şey var mı? O \'izleyen\' — işte o senin özün."',
+    kitap_notu: 'Self-as-context\'i somutlaştıran en güçlü metaforlardan biri. Hayes\'in favori metaforları arasında.',
+  },
+  {
+    id: 'sky-weather',
+    name: 'Gökyüzü ve Hava',
+    icon: '☁️',
+    process: 'Bağlam Olarak Benlik',
+    processTag: 'Self-as-Context',
+    aciklama: 'Sen gökyüzüsün. Duygular ve düşünceler hava — bazen fırtına, bazen güneş, bazen sis. Hava sürekli değişir. Ama gökyüzü hep orada. Fırtına gökyüzüne zarar veremez. Bulutlar geçer. Gökyüzü kalır.',
+    ne_zaman: 'Yogun duygusal dönemlerde, kişinin duygularıyla özdeşleştiği anlarda. "Ben depresyonluyum" yerine "depresyon şu an içimde" ayrımı için.',
+    ne_zaman_degil: 'Disosiyasyon eğilimi olan danışanlar için dikkatli kullan — "kendinden uzaklaşma" hissi verebilir.',
+    ornek_script: '"Bazen duygular o kadar yoğun oluyor ki sen duyguymuşsun gibi hissediyorsun. \'Ben kaygılıyım\' değil, \'ben kaygıyım\'. Şöyle düşün: sen gökyüzüsün. Bu anki duygu — kaygı, öfke, üzüntü — bir hava durumu. Fırtına gerçek, yoğun. Ama geçici. Gökyüzü hiçbir zaman fırtınaya dönüşmüyor."',
+    danisan_direnci: 'Soyut gelirse: "Gökyüzü yerine şunu dene: bu duygu sende mi, yoksa sen bu duygu musun? Küçük bir fark gibi görünüyor ama büyük bir fark."',
+    kitap_notu: 'Satranç Tahtası\'na alternatif, daha şiirsel bir self-as-context metaforu.',
+  },
+  {
+    id: 'tug-of-war',
+    name: 'Halat Çekme',
+    icon: '🪢',
+    process: 'Kabul',
+    processTag: 'Acceptance',
+    aciklama: 'Karşında dev bir canavar var — kaygın, öfken, acın. Elinizde bir halat var, çekiyorsunuz. Canavar güçlü, sen güçlü. İkiniz de uçurumun kenarında. Ne kadar çekersen o kadar çeker. Çözüm ipi bırakmak — canavarı yenmek değil, savaşı bırakmak.',
+    ne_zaman: 'Experiential avoidance\'ı göstermek için. "Duygularımla sürekli savaşıyorum" diyen danışanlar için mükemmel.',
+    ne_zaman_degil: 'İpi bırakmak "pes etmek" olarak yanlış anlaşılabilir. Mutlaka "savaşı bırakmak ≠ teslim olmak" ayrımını yap.',
+    ornek_script: '"Şöyle bir sahne hayal et. Karşında dev bir canavar var — kaygın diyelim. Elinizde halat var. Çekiyorsunuz, o çekiyor. İkiniz de yoruldunuz ama bırakmıyorsunuz. Ve aranda derin bir uçurum var. Ne yaparsın? Daha sert çekersen? Daha yorulursun. Peki ya ipi bıraksan? Canavar oradadır. Ama artık seni çekemiyor. Enerji serbest kalıyor."',
+    danisan_direnci: '"İpi bırakmak teslim olmak değil mi?" derse: "Tam tersi. İpi bırakmak için cesaret lazım. Teslim olmak savaşa devam etmek — kazanamayacağın bir savaşa."',
+    kitap_notu: 'Russ Harris\'in creative hopelessness çalışmasında sıkça kullandığı metafor.',
+  },
+  {
+    id: 'compass',
+    name: 'Pusula',
+    icon: '🧭',
+    process: 'Değerler',
+    processTag: 'Values',
+    aciklama: 'Değerler bir hedefe ulaşmak değil, bir yönde yürümek gibidir. Pusula kuzeyi gösterir — ama sen asla "kuzeye" ulaşamazsın. Kuzey bir hedef değil, yön. Değerler de böyle: sürekli yürüdüğün yön. Bazen rüzgar, bazen engel — ama pusulan hep kuzey gösteriyor.',
+    ne_zaman: 'Değerler ve hedefler arasındaki farkı açıklamak için. "Değerlerime ulaşamıyorum" diyen danışanlar için.',
+    ne_zaman_degil: 'Danışan değerlerini henüz netleştirememişse, önce değer clarification çalışması gerekir.',
+    ornek_script: '"Değerler ile hedefler arasında önemli bir fark var. Hedef ulaşılabilir — mezun olmak, iş bulmak gibi. Değer ise yön — dürüst olmak, sevgi dolu bir ebeveyn olmak gibi. Bunlar asla \'tamamlanmıyor\'. Pusula gibi: kuzey gösterir, ama oraya \'varmazsın\'. Hayatın boyunca o yönde yürürsün. Peki senin pusulana baktığında ne görüyorsun?"',
+    danisan_direnci: '"Peki değerlerime göre yaşayamıyorum ki" derse: "Değerlerin doğrultusunda mükemmel yürümek zorunda değilsin. Pusula yönü gösterir — sen bazen saptın, tamam. Şimdi tekrar o yöne dön."',
+    kitap_notu: 'Değer-hedef ayrımını öğretmek için en açık metafor. ACT değerler modülünün temeli.',
+  },
+  {
+    id: 'clipboard',
+    name: 'Pano (Clipboard)',
+    icon: '📋',
+    process: 'Kabul & Ayrışma',
+    processTag: 'Acceptance + Defusion',
+    aciklama: 'Russ Harris\'in "ACT in a Nutshell" egzersizinden. Pano tüm zorlu düşünce ve duyguları temsil eder. Yüzüne yapıştırırsan (fusion): hiçbir şey göremezsin, ilişki kuramazsın. Itiyor ve savaşırsan (avoidance): yorulursun, hayatın durur. Kucağına koyarsan (kabul): hâlâ orada ama artık kontrol etmiyor.',
+    ne_zaman: 'ACT\'i ilk kez açıklarken, özellikle birinci seanslarda. Tüm modeli somutlaştırır.',
+    ne_zaman_degil: 'Fiziksel bir nesne olmadan sözlü anlatım yetersiz kalabilir. Mümkünse gerçek bir pano/kitapla göster.',
+    ornek_script: '"Seninle küçük bir şey göstermek istiyorum. Bu klasörün senin zorlu düşünce ve duygularını temsil ettiğini düşün. Şimdi onu yüzüne koy — evet, böyle. Ne oluyor? Beni göremiyorsun, odayı göremiyorsun. İşte \'fusion\' bu. Şimdi itiyor, uzaklaştırmaya çalış — ama ben de itiyorum. Yorucu değil mi? İşte \'kaçınma\' bu. Şimdi kucağına koy, sadece bırak orada. Ne fark var?"',
+    danisan_direnci: 'Fiziksel egzersizi reddetirse: "Tamam, sadece düşün: şu an o düşüncen tam gözlerinin önünde mi, uzakta mı, yoksa sadece orada mı?"',
+    kitap_notu: 'Harris\'in en ünlü egzersizi. ACT\'i 5 dakikada öğretmenin en etkili yolu.',
+  },
+  {
+    id: 'hands-thoughts',
+    name: 'Eller Düşünceler Gibi',
+    icon: '🙌',
+    process: 'Bilişsel Ayrışma',
+    processTag: 'Cognitive Defusion',
+    aciklama: 'Ellerini açık bir kitap gibi tut, yavaşça yüzüne doğru getir — ta ki gözlerini kapatsın. Düşüncelerle fusion böyle. Sonra çok yavaşça uzaklaştır. Aradaki mesafe arttıkça dünya görünmeye başlar. Defusion bu — düşünceleri yok etmek değil, araya mesafe koymak.',
+    ne_zaman: 'Fusion\'ı experiential olarak göstermek için. Soyut kavramları somutlaştırmak istediğinde.',
+    ne_zaman_degil: 'Fiziksel hareket yapamayan danışanlar için uygun değil.',
+    ornek_script: '"Seninle küçük bir egzersiz yapalım. Ellerini aç, sanki kitap okuyormuşsun gibi. Şimdi çok yavaşça yüzüne doğru getir — dur, gözlerinin önünde. Ne görüyorsun? Sadece eller. İşte bu fusion. Şimdi çok yavaş geri çek. Ne oluyor? Dünya görünmeye başlıyor. Düşüncelerle ilişkin de böyle olabilir."',
+    danisan_direnci: 'Saçma bulursa: "Evet biraz tuhaf görünüyor. Ama dene — beyin soyut kavramları somut deneyimlerle çok daha iyi öğreniyor."',
+    kitap_notu: 'Harris\'in Hands as Thoughts egzersizi. Fusion/defusion\'ı bedende hissettiren nadir metaforlardan.',
+  },
+  {
+    id: 'radio',
+    name: 'Radyo Paraziti',
+    icon: '📻',
+    process: 'Bilişsel Ayrışma',
+    processTag: 'Cognitive Defusion',
+    aciklama: 'Zihin arka planda sürekli çalan bir radyo gibi. Bazen müzik, bazen parazit, bazen yorucu haberler. Radyoyu kapatmaya çalışmak işe yaramıyor — zaten kapanmıyor. Ama arka planda çalarken sen hayatını yaşayabilirsin. Radyo çalıyor olması, dans etmeni engellemek zorunda değil.',
+    ne_zaman: 'Zihnin sürekli işleyişini normalize etmek için. "Düşüncelerimi durduramıyorum" diye bunalan danışanlar için.',
+    ne_zaman_degil: 'Çok gürültülü obsesif düşünceler için yetersiz kalabilir — deredeki yapraklar daha iyi çalışabilir.',
+    ornek_script: '"Zihnin hiç susmadığını söylüyorsun. Haklısın — susmayacak da. Hiç susmuyor zaten. Şöyle düşün: zihnin arka planda çalan bir radyo. Bazen güzel müzik, bazen parazit. Onu kapatmaya çalışmak işe yaramıyor. Ama radyo çalarken yemek yapabilirsin, arkadaşınla konuşabilirsin. Amaç radyoyu susturmak değil, ona rağmen yaşamak."',
+    danisan_direnci: '"Ama çok yüksek sesle çalıyor" derse: "Evet, bazen öyle oluyor. O zaman sesi biraz kısabiliriz — defusion teknikleriyle. Ama asla tamamen kapatamayız, o yüzden ona rağmen yaşamayı öğrenmek daha işlevsel."',
+    kitap_notu: 'Defusion\'ı normalize eden, direnci azaltan hafif bir metafor.',
+  },
+  {
+    id: 'two-mountains',
+    name: 'İki Dağ',
+    icon: '⛰️',
+    process: 'Terapötik İlişki',
+    processTag: 'Therapeutic Relationship',
+    aciklama: 'Russ Harris\'in terapötik ilişkiyi tanımladığı metafor. Sen kendi dağını tırmanıyorsun, terapist kendi dağını. Terapist daha yukarıda — senin dağından bazı şeyleri görebiliyor. Ama mükemmel değil, kendi tırmanışı devam ediyor. İkiniz de aynı yolcusunuz.',
+    ne_zaman: 'İlk seanslarda terapötik ilişkiyi kurarken. "Siz her şeyi biliyorsunuz" veya "Siz hiç böyle hissetmediniz" diyen danışanlar için.',
+    ne_zaman_degil: 'Bu metafor terapist tarafından paylaşılır, danışana "anlat" türünden değil.',
+    ornek_script: '"Sizi bir şeyle ilgili aydınlatmak istiyorum. Çoğu insan terapisti her şeyi çözmüş, mükemmel biri olarak görür. Ama gerçek şu: ben kendi dağımı tırmanıyorum, sen kendi dağını. Belki biraz daha yukarıdayım — o yüzden senin dağından bazı şeyleri görebiliyorum. Ama ben de tırmanıyorum, ben de hata yapıyorum. İkimiz de bu yolun yolcusuyuz."',
+    danisan_direnci: 'Genellikle bu metaforu danışanlar iyi karşılar — terapisti insanileştiriyor ve bağ kuruyor.',
+    kitap_notu: 'Harris\'in terapötik ilişkiyi ACT çerçevesinde kurduğu temel metafor. Birinci seans için vazgeçilmez.',
+  },
+  {
+    id: 'problem-machine',
+    name: 'Problem Çözme Makinesi',
+    icon: '⚙️',
+    process: 'Kabul',
+    processTag: 'Acceptance / Creative Hopelessness',
+    aciklama: 'İnsan zihni mükemmel bir problem çözme makinesi. Dış dünyada harika çalışıyor: kurt kapıya geldi → itin veya kaç. Ama zihin aynı stratejiyi iç dünyaya uyguluyor: kaygı geldi → it veya kaç. Dış dünyada işe yarayan şey, iç dünyada işe yaramıyor — çünkü düşünce ve duygular fiziksel değil.',
+    ne_zaman: 'Creative hopelessness çalışmasında, kontrol ajansının neden işe yaramadığını göstermek için.',
+    ne_zaman_degil: 'Bu metafor biraz didaktik — önce experiential bir çalışma yap, sonra açıklama olarak kullan.',
+    ornek_script: '"Zihnin inanılmaz bir problem çözme makinesi. Dış dünyada harika çalışıyor. Kurt kapıya gelirse — kaç ya da savaş. Yağmur varsa — şemsiye al. Ama zihin aynı stratejiyi duygulara da uyguluyor: kaygı geldi → yok et ya da kaç. Ve işte burada takılıyoruz. Çünkü kaygı fiziksel değil — itersen geri gelir. Düşünce değil — bastırırsan yüzeye çıkar. O zaman ne yapıyoruz?"',
+    danisan_direnci: '"Peki ne yapacağız?" diye sorarsa: "İşte bu soruyu birlikte keşfedeceğiz. Kabul ve değerler — dış dünyada değil, iç dünyada farklı çalışan bir yaklaşım."',
+    kitap_notu: 'Experiential avoidance\'ın neden işe yaramadığını psikoeğitimsel olarak açıklamanın en net yolu.',
+  },
+];
+
+// ── METAFOR LAB FONKSİYONLARI ──────────────────────────────────────────────
+function switchMetaphorTab(tab) {
+  const learnDiv = document.getElementById('metaphor-learn');
+  const practiceDiv = document.getElementById('metaphor-practice');
+  const learnBtn = document.getElementById('tab-learn');
+  const practiceBtn = document.getElementById('tab-practice');
+  if (tab === 'learn') {
+    learnDiv.style.display = '';
+    practiceDiv.style.display = 'none';
+    learnBtn.style.borderColor = 'var(--accent)';
+    learnBtn.style.color = 'var(--accent)';
+    practiceBtn.style.borderColor = '';
+    practiceBtn.style.color = '';
+    renderMetaphorCards();
+  } else {
+    learnDiv.style.display = 'none';
+    practiceDiv.style.display = '';
+    practiceBtn.style.borderColor = 'var(--accent)';
+    practiceBtn.style.color = 'var(--accent)';
+    learnBtn.style.borderColor = '';
+    learnBtn.style.color = '';
+  }
+}
+
+function renderMetaphorCards() {
+  const grid = document.getElementById('metaphor-cards-grid');
+  if (!grid) return;
+  grid.innerHTML = METAPHOR_DATA.map(m => `
+    <div onclick="openMetaphorDetail('${m.id}')" style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:18px;cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:24px;margin-bottom:8px;">${m.icon}</div>
+      <div style="font-family:var(--display);font-size:14px;color:var(--text);margin-bottom:4px;">${m.name}</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">${m.process}</div>
+      <div style="font-size:11.5px;color:var(--text3);line-height:1.5;">${m.aciklama.substring(0, 80)}...</div>
+    </div>`).join('');
+}
+
+function openMetaphorDetail(id) {
+  const m = METAPHOR_DATA.find(x => x.id === id);
+  if (!m) return;
+  const grid = document.getElementById('metaphor-cards-grid');
+  grid.innerHTML = `
+    <div style="grid-column:1/-1;">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);cursor:pointer;letter-spacing:.08em;text-transform:uppercase;margin-bottom:20px;display:inline-flex;align-items:center;gap:6px;" onclick="renderMetaphorCards()">← Tüm Metaforlar</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        <div style="font-size:36px;">${m.icon}</div>
+        <div>
+          <div style="font-family:var(--display);font-size:22px;color:var(--text);">${m.name}</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-top:3px;">${m.process} — ${m.processTag}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:12px;max-width:720px;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:18px;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;">Metafor Nedir?</div>
+          <div style="font-size:13.5px;color:var(--text2);line-height:1.7;">${m.aciklama}</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:4px;padding:16px;">
+            <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">✓ Ne Zaman Kullan</div>
+            <div style="font-size:12.5px;color:var(--text2);line-height:1.6;">${m.ne_zaman}</div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--danger);border-radius:4px;padding:16px;">
+            <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">✕ Ne Zaman Kullanma</div>
+            <div style="font-size:12.5px;color:var(--text2);line-height:1.6;">${m.ne_zaman_degil}</div>
+          </div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:4px;padding:18px;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;">→ Örnek Script</div>
+          <div style="font-size:13px;color:var(--text);line-height:1.75;font-style:italic;background:rgba(200,169,110,.05);padding:14px;border-radius:3px;">${m.ornek_script}</div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--info);border-radius:4px;padding:16px;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Danışan Reddederse?</div>
+          <div style="font-size:12.5px;color:var(--text2);line-height:1.6;">${m.danisan_direnci}</div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;">📚 Kitap Notu</div>
+          <div style="font-size:12px;color:var(--text3);line-height:1.6;font-style:italic;">${m.kitap_notu}</div>
+        </div>
+
+        <button class="btn primary" style="align-self:flex-start;margin-top:4px;" onclick="switchMetaphorTab('practice');document.getElementById('metaphor-select').value='${m.name}'">Bu Metaforla Pratik Yap →</button>
+      </div>
+    </div>`;
+}
+
+// Metafor Lab açılınca kartları render et — showView içinde tetikleniyor
+
+// ── API CALL (backend'e istek atar) ───────────────────────────────────────
+async function api(endpoint, body) {
+  const res = await fetch(`/api/${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+// ── CLIENT PROFILES — 12 Danışan ──────────────────────────────────────────
+const PROFILES = [
+  {
+    id:'ayse', name:'Ayşe', age:28, occupation:'Finans uzmanı', resistanceLevel:'orta',
+    issue:'İş yerinde yoğun kaygı ve başarısızlık korkusu',
+    background:'Sürekli terfi almış, yüksek performans beklentisi olan birisi. Hata yapmaktan aşırı korkuyor.',
+    fusionThemes:'"Başarısız olursam her şey biter", "Yeterince iyi değilim"',
+    avoidanceStyle:'Mükemmel olmayan işleri erteliyor, zor toplantılardan kaçıyor',
+    description:'Mükemmeliyetçi, başarı odaklı, duyguları bastıran bir danışan',
+    difficulty:'Orta', tags:['kaygı','mükemmeliyetçilik','iş stresi']
+  },
+  {
+    id:'mert', name:'Mert', age:35, occupation:'Yazılım geliştirici', resistanceLevel:'yüksek',
+    issue:'Kronik depresyon belirtileri ve anlamsızlık hissi',
+    background:'3 yıldır evden çalışıyor. Arkadaşlıklarını yavaş yavaş bıraktı. Terapiye şüpheyle geliyor.',
+    fusionThemes:'"Hiçbir şeyin önemi yok", "Zaten değişmez", "Bu terapi de işe yaramaz"',
+    avoidanceStyle:'Sosyal izolasyon, aşırı uyku, oyunlara gömülme',
+    description:'Terapiye şüpheyle yaklaşan, değişime dirençli, nihilist eğilimli bir danışan',
+    difficulty:'Zor', tags:['depresyon','direniş','anlamsızlık']
+  },
+  {
+    id:'elif', name:'Elif', age:22, occupation:'Üniversite öğrencisi', resistanceLevel:'düşük',
+    issue:'Sosyal kaygı ve yargılanma korkusu',
+    background:'İlk yıl üniversite. Sınıfta konuşmaktan, sunum yapmaktan korkuyor.',
+    fusionThemes:'"Herkes beni yargılıyor", "Aptal görünüyorum"',
+    avoidanceStyle:'Arka sıralara oturma, söz almaktan kaçınma, sosyal davetleri reddetme',
+    description:'Değişmek isteyen ama nasıl yapacağını bilemeyen, terapiste güvenen bir danışan',
+    difficulty:'Kolay-Orta', tags:['sosyal kaygı','genç yetişkin']
+  },
+  {
+    id:'can', name:'Can', age:42, occupation:'İnşaat mühendisi', resistanceLevel:'orta',
+    issue:'Kronik bel ağrısı ve buna bağlı yaşam kalitesi kaybı',
+    background:'2 yıldır bel ağrısı çekiyor. Psikolojik bileşeni kabul etmiyor.',
+    fusionThemes:'"Ağrı gerçek, bu psikoloji değil", "Eski ben yoktu artık"',
+    avoidanceStyle:'Fiziksel aktiviteden kaçınma, öfkeyle tepki verme',
+    description:'Psikolojik boyutu kabul etmekte zorlanan, bedensel soruna yapışık bir danışan',
+    difficulty:'Orta-Zor', tags:['kronik ağrı','kabul güçlüğü']
+  },
+  {
+    id:'kerem', name:'Kerem', age:31, occupation:'Satış temsilcisi', resistanceLevel:'orta',
+    issue:'Alkol kullanım bozukluğu — iş stresiyle içiyor',
+    background:'Hafta içi birkaç bira, hafta sonları kontrolden çıkıyor. Eşi tehdit etti.',
+    fusionThemes:'"Sadece rahatlamak istiyorum", "Ben alkolik değilim"',
+    avoidanceStyle:'Kaygıdan kaçmak için içiyor, iş sorunlarını görmezden geliyor',
+    description:'Bağımlılığı minimalize eden, değişim motivasyonu dış baskıdan gelen bir danışan',
+    difficulty:'Zor', tags:['bağımlılık','alkol','inkar']
+  },
+  {
+    id:'neslihan', name:'Neslihan', age:38, occupation:'Hemşire', resistanceLevel:'orta',
+    issue:'İş yerinde şiddete maruz kalma sonrası PTSD belirtileri',
+    background:'6 ay önce hasta yakını tarafından saldırıya uğradı. Hastaneye gitmekten korkuyor.',
+    fusionThemes:'"Orada olmam gerekmiyordu", "Bir daha güvende olamam"',
+    avoidanceStyle:'Hastane koridorlarından kaçınma, duygusal uyuşma',
+    description:'Travmatik deneyimi olan, anılardan kaçınan ama anlam arayan bir danışan',
+    difficulty:'Zor', tags:['travma','PTSD','mesleki']
+  },
+  {
+    id:'tarık', name:'Tarık', age:17, occupation:'Lise öğrencisi', resistanceLevel:'yüksek',
+    issue:'Aile çatışması ve okul reddi — terapiye zorla getirildi',
+    background:'Ebeveynleri boşanıyor. Okula gitmiyor. Ben sorun değilim diyor.',
+    fusionThemes:'"Kimse anlamıyor", "Neden buradayım ki", "Terapi işe yaramaz"',
+    avoidanceStyle:'Okul ve sorumluluktan kaçınma, telefon ve oyuna gömülme',
+    description:'Terapiye direnen, zorla gelen, otorite figürlerine karşı çıkan bir ergen',
+    difficulty:'Zor', tags:['ergen','direniş','aile']
+  },
+  {
+    id:'fatma', name:'Fatma', age:55, occupation:'Ev hanımı', resistanceLevel:'düşük',
+    issue:'Eş kaybı sonrası komplike yas ve anlam yitimi',
+    background:'8 ay önce kocasını kaybetti. Ağlamıyor, hissizleşmiş.',
+    fusionThemes:'"Olmadan yaşanmaz", "İçim bomboş"',
+    avoidanceStyle:'Duyguları bastırıyor, anıları konuşmuyor',
+    description:'Duygusal uyuşma yaşayan, yas sürecinde tıkalmış, anlam arayan bir danışan',
+    difficulty:'Orta', tags:['yas','kayıp','anlam']
+  },
+  {
+    id:'emre', name:'Emre', age:26, occupation:'Tıp öğrencisi', resistanceLevel:'orta',
+    issue:'Obsesif düşünceler ve kontrol etme kompulsiyonları',
+    background:'Tıp okuyor, hastalık obsesyonları var. Her belirti kanser olabilir diye araştırıyor.',
+    fusionThemes:'"Kontrol etmezsem bir şey olacak", "Düşünceler gerçek tehlikeyi gösteriyor"',
+    avoidanceStyle:'Sürekli googlelama, doktor arama, fiziksel kontroller',
+    description:'Düşüncelerle kaynaşmış, kontrolün geçici rahatlama verdiğini bilen bir danışan',
+    difficulty:'Orta-Zor', tags:['OCD','kontrol','sağlık anksiyetesi']
+  },
+  {
+    id:'selin', name:'Selin', age:33, occupation:'Öğretmen', resistanceLevel:'düşük',
+    issue:'Tekrarlayan ilişki örüntüleri ve terk edilme korkusu',
+    background:'3. kez benzer bir ilişki bitti. Neden hep aynı insanları seçiyorum diye soruyor.',
+    fusionThemes:'"Ben sevilmeye layık değilim", "Hep terk edilirim"',
+    avoidanceStyle:'Gerçek duygularını saklamak, çatışmadan kaçmak',
+    description:'İçgörü arayan ama değişmekten korkan, ilişki örüntülerini keşfetmek isteyen bir danışan',
+    difficulty:'Orta', tags:['ilişki','terk edilme korkusu']
+  },
+  {
+    id:'burak', name:'Burak', age:44, occupation:'Avukat', resistanceLevel:'orta',
+    issue:'Dışarıdan başarılı görünen ama içten çöken yüksek fonksiyonlu depresyon',
+    background:'Herkes iyi görüyor onu. Ama sabahları kalkmak çok zor. Hiçbir şeyden zevk almıyor.',
+    fusionThemes:'"Şikayet etme hakkım yok", "Güçsüzlük göstermek tehlikeli"',
+    avoidanceStyle:'İşe gömülerek duygulardan kaçma, yardım istememe',
+    description:'Dışarıdan başarılı, içeriden boş — zayıflık göstermemeyi değer olarak benimseyen bir danışan',
+    difficulty:'Orta', tags:['depresyon','yüksek fonksiyonlu','maske']
+  },
+  {
+    id:'zehra', name:'Zehra', age:29, occupation:'Grafik tasarımcı', resistanceLevel:'düşük',
+    issue:'Panik bozukluğu — metroda ve kalabalıklarda panik atak',
+    background:'1 yıldır metro binemiyor. Hayatı giderek daralıyor.',
+    fusionThemes:'"Kalp krizi geçireceğim", "Kontrolü kaybedeceğim"',
+    avoidanceStyle:'Metro, AVM, asansörlerden kaçınma — yaşam alanı daraldı',
+    description:'Kaçınma davranışları hayatını kısıtlamış, değişmek isteyen ama korkuyla bloke olmuş bir danışan',
+    difficulty:'Orta', tags:['panik','kaçınma','yaşam kısıtlaması']
+  },
+];
+
+const SCENARIOS = [
+  { id:'crying', icon:'😢', title:'Danışan Ağlıyor', desc:'Danışan birden ağlamaya başladı, konuşmayı kesti.', prompt:'Danışan birden ağlamaya başladı, konuşmayı kesti ve başını eğdi. Uzun bir sessizlik var.' },
+  { id:'angry', icon:'😤', title:'Danışan Öfkeleniyor', desc:'"Siz terapistler hep aynısınız!" diyerek öfkelendi.', prompt:'Danışan "Siz terapistler hep aynısınız, hiçbir şey değişmiyor! Neden hâlâ buraya geliyorum?" dedi.' },
+  { id:'silence', icon:'🤐', title:'Uzun Sessizlik', desc:'Danışan 3 dakikadır hiç konuşmuyor.', prompt:'Terapist önemli bir soru sordu ama danışan 3 dakikadır hiçbir şey söylemiyor.' },
+  { id:'quit', icon:'🚪', title:'Terapiyi Bırakmak İstiyor', desc:'"Sanırım bu terapi bana göre değil" dedi.', prompt:'Danışan "Sanırım bu terapi bana göre değil, bırakmayı düşünüyorum. Bir şey değişmiyor" dedi.' },
+  { id:'crisis', icon:'🆘', title:'Kriz Belirtileri', desc:'"Artık hiçbir şeyin önemi yok" dedi.', prompt:'Danışan "Artık hiçbir şeyin önemi yok, ne gerek var? Bazen devam etmek istemiyorum" dedi.' },
+  { id:'intellectualizing', icon:'🧠', title:'Akılsallaştırıyor', desc:'Her şeyi analiz ediyor ama hiç hissetmiyor gibi.', prompt:'Danışan tüm seans boyunca her şeyi entelektüel düzeyde analiz etti, hiç duygularına değmedi. "Evet, fusion bu olsa gerek, teorik olarak biliyorum" dedi.' },
+  { id:'metaphor-rejection', icon:'🙄', title:'Metaforu Reddediyor', desc:'"Bu otobüs metaforu saçma, benimle alakası yok" dedi.', prompt:'Terapist Otobüsteki Yolcular metaforunu kullandı. Danışan "Bu metafor çok saçma, ben bir otobüs değilim, benimle alakasız" dedi.' },
+  { id:'wants-advice', icon:'💡', title:'Sadece Tavsiye İstiyor', desc:'"Ne yapmam gerektiğini söyleyin, siz uzmansınız" dedi.', prompt:'Danışan "Daha fazla konuşmak istemiyorum, ne yapmam gerektiğini söyleyin. Siz uzmansınız, çözümü siz biliyorsunuz" dedi.' },
+];
+
+const CASE_FIELDS = [
+  { key:'problem', label:'Problem', placeholder:'Danışanın temel sorunu...' },
+  { key:'fusion', label:'Fusion (Yapışma)', placeholder:'Hangi düşüncelere yapışıyor?' },
+  { key:'avoidance', label:'Avoidance (Kaçınma)', placeholder:'Nelerden kaçınıyor?' },
+  { key:'values', label:'Values (Değerler)', placeholder:'Değerleri ve önem verdikleri...' },
+  { key:'action', label:'Action (Eylem)', placeholder:'Değerlere yönelik atılabilecek adımlar...' },
+];
+
+// ── VIEW MANAGER ───────────────────────────────────────────────────────────
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => { v.style.display = 'none'; v.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const v = document.getElementById(name + '-view');
+  if (!v) return;
+  v.classList.add('active');
+  v.style.display = name === 'home' ? 'block' : 'flex';
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick')?.includes(`'${name}'`)) n.classList.add('active');
+  });
+  if (name === 'session-select') renderProfiles();
+  if (name === 'difficult') renderScenarios();
+  if (name === 'case') renderCaseFields();
+  if (name === 'metaphor') { switchMetaphorTab('learn'); }
+}
+
+// ── PROFILES ───────────────────────────────────────────────────────────────
+function renderProfiles() {
+  const container = document.getElementById('profile-cards');
+  const filterHTML = `<div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+    <button class="btn" onclick="filterProfiles('tümü')" id="filter-tümü" style="font-size:10px;padding:5px 12px;border-color:var(--accent);color:var(--accent);">Tümü (${PROFILES.length})</button>
+    <button class="btn" onclick="filterProfiles('kolay')" id="filter-kolay" style="font-size:10px;padding:5px 12px;">Kolay</button>
+    <button class="btn" onclick="filterProfiles('orta')" id="filter-orta" style="font-size:10px;padding:5px 12px;">Orta</button>
+    <button class="btn" onclick="filterProfiles('zor')" id="filter-zor" style="font-size:10px;padding:5px 12px;">Zor</button>
+  </div>`;
+  const cardsHTML = PROFILES.map(p => `
+    <div class="profile-card" onclick="startSession('${p.id}')" data-difficulty="${(p.difficulty||'').toLowerCase()}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <div class="profile-card-name">${p.name}, ${p.age}</div>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;">${p.occupation||''}</span>
+      </div>
+      <div class="profile-card-issue">${p.issue}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;">
+        <span class="tag ${p.resistanceLevel === 'yüksek' ? 'yuksek' : p.resistanceLevel === 'düşük' ? 'dusuk' : 'orta'}">Direnç: ${p.resistanceLevel}</span>
+        <span style="font-family:var(--mono);font-size:9px;padding:3px 8px;border-radius:2px;background:rgba(255,255,255,.04);color:var(--text3);border:1px solid var(--border);">${p.difficulty||''}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);font-style:italic;line-height:1.5;">${p.description}</div>
+      ${p.tags ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;">${p.tags.map(t=>`<span style="font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:2px;background:rgba(200,169,110,.06);color:var(--text3);">#${t}</span>`).join('')}</div>` : ''}
+    </div>`).join('');
+  container.innerHTML = filterHTML + cardsHTML;
+}
+
+function filterProfiles(level) {
+  document.querySelectorAll('[id^="filter-"]').forEach(b => { b.style.borderColor=''; b.style.color=''; });
+  const btn = document.getElementById('filter-' + level);
+  if (btn) { btn.style.borderColor='var(--accent)'; btn.style.color='var(--accent)'; }
+  document.querySelectorAll('.profile-card').forEach(card => {
+    if (level === 'tümü') { card.style.display=''; return; }
+    card.style.display = (card.dataset.difficulty||'').includes(level) ? '' : 'none';
+  });
+}
+
+// ── SESSION ────────────────────────────────────────────────────────────────
+function startSession(id) {
+  const p = PROFILES.find(x => x.id === id);
+  state.currentProfile = p;
+  state.messages = [];
+  state.totalTherapistMsgs = 0;
+  document.getElementById('client-name-label').textContent = `${p.name}, ${p.age}`;
+  document.getElementById('client-issue-label').textContent = p.issue;
+  document.getElementById('client-avatar').textContent = p.name[0];
+  document.getElementById('msg-counter').textContent = '0 mesaj';
+  document.getElementById('supervisor-hint').style.display = 'none';
+  document.getElementById('messages').innerHTML = `<div class="msg system"><div class="msg-bubble">Seans başladı. Terapist olarak ilk adımı sen at.</div></div>`;
+  showView('session');
+}
+
+async function sendMessage() {
+  const input = document.getElementById('message-input');
+  const text = input.value.trim();
+  if (!text || !state.currentProfile) return;
+  input.value = '';
+  autoResize(input);
+  addMessage('therapist', text);
+  state.messages.push({ role: 'user', content: text });
+  state.totalTherapistMsgs++;
+  document.getElementById('msg-counter').textContent = `${state.totalTherapistMsgs} mesaj`;
+  if (state.totalTherapistMsgs % 4 === 0) document.getElementById('supervisor-hint').style.display = 'inline';
+  setLoading(true);
+  try {
+    const data = await api('session', { messages: state.messages, clientProfile: state.currentProfile });
+    state.messages.push({ role: 'assistant', content: data.reply });
+    addMessage('client', data.reply);
+  } catch (e) {
+    addMessage('system', 'Hata: ' + e.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+function addMessage(role, text) {
+  const c = document.getElementById('messages');
+  const labels = { therapist: 'Terapist (Sen)', client: state.currentProfile?.name || 'Danışan' };
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = role !== 'system'
+    ? `<div class="msg-label">${labels[role]}</div><div class="msg-bubble">${text}</div>`
+    : `<div class="msg-bubble">${text}</div>`;
+  c.appendChild(div);
+  c.scrollTop = c.scrollHeight;
+}
+
+async function requestSupervisorFeedback() {
+  if (state.messages.length < 2) { alert('En az birkaç mesaj gerekli.'); return; }
+  document.getElementById('supervisor-panel').classList.add('open');
+  document.getElementById('supervisor-body').innerHTML = `<div style="font-size:13px;color:var(--text3);font-style:italic;text-align:center;margin-top:40px;">Seans analiz ediliyor...</div>`;
+  try {
+    const data = await api('supervisor', { messages: state.messages, clientProfile: state.currentProfile });
+    const cleaned = data.feedback.replace(/```json|```/g, '').trim();
+    renderSupervisorFeedback(JSON.parse(cleaned));
+  } catch (e) {
+    document.getElementById('supervisor-body').innerHTML = `<div style="color:var(--danger);font-size:13px;padding:20px;">Hata: ${e.message}</div>`;
+  }
+}
+
+function renderSupervisorFeedback(fb) {
+  const processes = fb.act_surecler || {};
+  const pHTML = Object.entries({ 'Kabul': processes.kabul, 'Bil. Ayrışma': processes.bilissel_ayrisma, 'Anda Olma': processes.anda_olma, 'Bağlam Benlik': processes.bagiam_olarak_benlik, 'Değerler': processes.degerler, 'Kararlı Eylem': processes.kararli_eylem })
+    .map(([l, s]) => `<div class="process-item"><div class="process-label">${l} (${s||0}/10)</div><div class="process-bar-bg"><div class="process-bar" style="width:${(s||0)*10}%"></div></div></div>`).join('');
+  document.getElementById('supervisor-body').innerHTML = `
+    <div class="feedback-section info"><div class="feedback-section-title">ACT Süreç Kullanımı</div><div class="act-processes">${pHTML}</div></div>
+    ${fb.guclu_yanlar?.length ? `<div class="feedback-section good"><div class="feedback-section-title">✓ Güçlü Yanlar</div><ul class="feedback-list">${fb.guclu_yanlar.map(i=>`<li>${i}</li>`).join('')}</ul></div>` : ''}
+    ${fb.act_firsatlari?.length ? `<div class="feedback-section warn"><div class="feedback-section-title">△ Kaçırılan Fırsatlar</div><ul class="feedback-list">${fb.act_firsatlari.map(i=>`<li>${i}</li>`).join('')}</ul></div>` : ''}
+    ${fb.hatalar?.length ? `<div class="feedback-section bad"><div class="feedback-section-title">✕ Hatalar</div><ul class="feedback-list">${fb.hatalar.map(i=>`<li>${i}</li>`).join('')}</ul></div>` : ''}
+    ${fb.somut_oneri ? `<div class="feedback-section info"><div class="feedback-section-title">→ Somut Öneri</div><div class="feedback-text">${fb.somut_oneri}</div></div>` : ''}
+    ${fb.genel_yorum ? `<div class="feedback-section"><div class="feedback-section-title">Genel Değerlendirme</div><div class="feedback-text">${fb.genel_yorum}</div></div>` : ''}
+  `;
+}
+
+function closeSupervisor() { document.getElementById('supervisor-panel').classList.remove('open'); }
+function endSession() { if (confirm('Seansı bitirmek istiyor musun?')) requestSupervisorFeedback(); }
+
+// ── ACADEMY ────────────────────────────────────────────────────────────────
+async function loadAcademy(key, name) {
+  const inner = document.getElementById('academy-inner');
+  inner.innerHTML = `<div class="academy-content"><div class="back-link" onclick="document.getElementById('academy-inner').innerHTML=''; showView('academy')">← Geri</div><div style="font-size:13px;color:var(--text3);font-style:italic;">Yükleniyor...</div></div>`;
+  setLoading(true);
+  try {
+    const data = await api('academy', { topic: key });
+    const d = JSON.parse(data.content.replace(/```json|```/g, '').trim());
+    inner.innerHTML = `
+      <div class="academy-content">
+        <div class="back-link" onclick="document.getElementById('academy-inner').innerHTML='<div class=academy-grid></div>'; showView('academy')">← Tüm Konular</div>
+        <div style="font-family:var(--display);font-size:22px;color:var(--accent);margin-bottom:6px;">${d.baslik || name}</div>
+        <div style="margin-bottom:20px;height:1px;background:var(--border);"></div>
+        <div class="academy-section"><div class="academy-section-title">Basit Açıklama</div><div class="academy-section-content">${d.basit_aciklama}</div></div>
+        <div class="academy-section"><div class="academy-section-title">Klinik Açıklama</div><div class="academy-section-content">${d.klinik_aciklama}</div></div>
+        <div class="academy-section"><div class="academy-section-title">ACT vs CBT Farkı</div><div class="academy-section-content">${d.act_cbt_farki}</div></div>
+        ${d.terapist_hatalari?.length ? `<div class="academy-section" style="border-left:3px solid var(--danger);"><div class="academy-section-title">Sık Yapılan Hatalar</div><ul style="list-style:none;display:flex;flex-direction:column;gap:6px;">${d.terapist_hatalari.map(h=>`<li style="font-size:13px;color:var(--text2);padding-left:14px;border-left:2px solid var(--border2);">${h}</li>`).join('')}</ul></div>` : ''}
+        ${d.mini_egzersiz ? `<div class="academy-section" style="border-left:3px solid var(--accent2);"><div class="academy-section-title">Mini Egzersiz — ${d.mini_egzersiz.sure||''}</div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;">${d.mini_egzersiz.baslik}</div><div class="academy-section-content">${d.mini_egzersiz.talimat}</div></div>` : ''}
+        ${d.kisa_vaka ? `<div class="academy-section" style="border-left:3px solid var(--accent);"><div class="academy-section-title">Kısa Vaka</div><div style="display:flex;flex-direction:column;gap:8px;"><div><span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;">Danışan</span><br><span style="font-size:13px;color:var(--text2);">${d.kisa_vaka.danisan} — ${d.kisa_vaka.sorun}</span></div><div><span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;">Müdahale</span><br><span style="font-size:13px;color:var(--text2);font-style:italic;">"${d.kisa_vaka.mudahale}"</span></div><div><span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;">Sonuç</span><br><span style="font-size:13px;color:var(--text2);">${d.kisa_vaka.sonuc}</span></div></div></div>` : ''}
+      </div>`;
+  } catch (e) {
+    inner.innerHTML = `<div style="padding:28px;color:var(--danger);">Hata: ${e.message}</div>`;
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── DIFFICULT MOMENTS ──────────────────────────────────────────────────────
+function renderScenarios() {
+  document.getElementById('scenarios-list').innerHTML = `
+    <div style="font-family:var(--display);font-size:18px;color:var(--text);padding-bottom:4px;">Zor Anlar</div>
+    <div style="font-size:13px;color:var(--text2);font-style:italic;margin-bottom:16px;">Bir senaryo seç, müdahaleni yaz.</div>
+    ${SCENARIOS.map(s => `
+      <div class="scenario-card" onclick="openScenario('${s.id}')">
+        <div class="scenario-icon">${s.icon}</div>
+        <div><div class="scenario-title">${s.title}</div><div class="scenario-desc">${s.desc}</div></div>
+      </div>`).join('')}`;
+}
+
+function openScenario(id) {
+  const s = SCENARIOS.find(x => x.id === id);
+  const inner = document.getElementById('difficult-inner');
+  inner.innerHTML = `
+    <div style="padding:28px;max-width:680px;">
+      <div class="back-link" onclick="renderScenarios()">← Senaryolar</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:18px;margin-bottom:20px;">
+        <div style="font-size:20px;margin-bottom:8px;">${s.icon}</div>
+        <div style="font-family:var(--display);font-size:17px;color:var(--text);margin-bottom:8px;">${s.title}</div>
+        <div style="font-size:13.5px;color:var(--text2);font-style:italic;line-height:1.6;">"${s.desc}"</div>
+      </div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Senin müdahalen</div>
+      <textarea id="difficult-input" placeholder="Bu anda terapist olarak ne söylerdin?" style="width:100%;min-height:100px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:14px;font-family:var(--serif);font-size:14px;color:var(--text);outline:none;resize:vertical;line-height:1.6;"></textarea>
+      <button class="btn primary" style="margin-top:12px;" onclick="evaluateScenario('${s.id}')">Değerlendir</button>
+      <div id="difficult-result" style="margin-top:20px;"></div>
+    </div>`;
+}
+
+async function evaluateScenario(id) {
+  const s = SCENARIOS.find(x => x.id === id);
+  const resp = document.getElementById('difficult-input').value.trim();
+  if (!resp) return;
+  const result = document.getElementById('difficult-result');
+  result.innerHTML = `<div style="font-size:13px;color:var(--text3);font-style:italic;">Değerlendiriliyor...</div>`;
+  setLoading(true);
+  try {
+    const data = await api('difficult', { scenario: s.prompt, therapistResponse: resp });
+    const fb = JSON.parse(data.evaluation.replace(/```json|```/g, '').trim());
+    result.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="font-family:var(--display);font-size:16px;color:var(--text);">Değerlendirme — <span style="color:var(--accent)">${fb.genel_puan}/10</span></div>
+        ${fb.ne_iyi_gitti ? `<div class="feedback-section good"><div class="feedback-section-title">✓ İyi Giden</div><div class="feedback-text">${fb.ne_iyi_gitti}</div></div>` : ''}
+        ${fb.ne_kacirildi ? `<div class="feedback-section warn"><div class="feedback-section-title">△ Kaçırılan</div><div class="feedback-text">${fb.ne_kacirildi}</div></div>` : ''}
+        ${fb.act_perspektifi ? `<div class="feedback-section info"><div class="feedback-section-title">ACT Perspektifi</div><div class="feedback-text">${fb.act_perspektifi}</div></div>` : ''}
+        ${fb.alternatif_mudahale ? `<div class="feedback-section" style="border-left:3px solid var(--accent);"><div class="feedback-section-title">→ Alternatif Müdahale</div><div class="feedback-text" style="font-style:italic;">"${fb.alternatif_mudahale}"</div></div>` : ''}
+        ${fb.dikkat ? `<div class="feedback-section bad"><div class="feedback-section-title">⚠ Dikkat</div><div class="feedback-text">${fb.dikkat}</div></div>` : ''}
+      </div>`;
+  } catch (e) {
+    result.innerHTML = `<div style="color:var(--danger);">Hata: ${e.message}</div>`;
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── METAPHOR LAB ───────────────────────────────────────────────────────────
+async function loadMetaphor() {
+  const name = document.getElementById('metaphor-select').value;
+  const scenario = document.getElementById('metaphor-scenario').value.trim();
+  if (!scenario) { alert('Senaryo yaz.'); return; }
+  const result = document.getElementById('metaphor-result');
+  result.innerHTML = `<div style="font-size:13px;color:var(--text3);font-style:italic;">Rehberlik yükleniyor...</div>`;
+  setLoading(true);
+  try {
+    const data = await api('metaphor', { metaphorName: name, userScenario: scenario });
+    const fb = JSON.parse(data.guidance.replace(/```json|```/g, '').trim());
+    result.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="feedback-section info"><div class="feedback-section-title">Metafor Açıklaması</div><div class="feedback-text">${fb.metafor_aciklamasi}</div></div>
+        <div class="feedback-section good"><div class="feedback-section-title">Ne Zaman Kullanılır</div><div class="feedback-text">${fb.ne_zaman_kullanilir}</div></div>
+        <div class="feedback-section bad"><div class="feedback-section-title">Ne Zaman Kullanılmaz</div><div class="feedback-text">${fb.ne_zaman_kullanilmaz}</div></div>
+        <div class="feedback-section warn"><div class="feedback-section-title">Senin Senaryonu</div><div class="feedback-text">${fb.kullanici_senaryosu_analizi}</div></div>
+        <div class="feedback-section" style="border-left:3px solid var(--accent);"><div class="feedback-section-title">→ Örnek Kullanım</div><div class="feedback-text" style="font-style:italic;">"${fb.ornek_kullanim}"</div></div>
+        ${fb.alternatif_metaforlar?.length ? `<div class="feedback-section"><div class="feedback-section-title">Alternatif Metaforlar</div><ul class="feedback-list">${fb.alternatif_metaforlar.map(m=>`<li>${m}</li>`).join('')}</ul></div>` : ''}
+      </div>`;
+  } catch (e) {
+    result.innerHTML = `<div style="color:var(--danger);">Hata: ${e.message}</div>`;
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── CASE FORMULATION ────────────────────────────────────────────────────────
+function renderCaseFields() {
+  document.getElementById('case-fields').innerHTML = CASE_FIELDS.map(f => `
+    <div style="margin-bottom:14px;">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px;">${f.label}</div>
+      <textarea id="case-${f.key}" placeholder="${f.placeholder}" style="width:100%;min-height:70px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:12px;font-family:var(--serif);font-size:14px;color:var(--text);outline:none;resize:vertical;line-height:1.6;"></textarea>
+    </div>`).join('');
+}
+
+async function submitCase() {
+  const formulation = {};
+  for (const f of CASE_FIELDS) {
+    formulation[f.key] = document.getElementById(`case-${f.key}`)?.value.trim() || '';
+  }
+  if (!formulation.problem) { alert('En az "Problem" alanını doldur.'); return; }
+  const result = document.getElementById('case-result');
+  result.innerHTML = `<div style="font-size:13px;color:var(--text3);font-style:italic;">Formülasyon değerlendiriliyor...</div>`;
+  setLoading(true);
+  try {
+    const data = await api('case-formulation', { formulation });
+    const fb = JSON.parse(data.feedback.replace(/```json|```/g, '').trim());
+    result.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="feedback-section info"><div class="feedback-section-title">Genel Değerlendirme</div><div class="feedback-text">${fb.genel_degerlendirme}</div></div>
+        ${fb.guclu_yanlar?.length ? `<div class="feedback-section good"><div class="feedback-section-title">✓ Güçlü Yanlar</div><ul class="feedback-list">${fb.guclu_yanlar.map(i=>`<li>${i}</li>`).join('')}</ul></div>` : ''}
+        ${fb.eksikler?.length ? `<div class="feedback-section bad"><div class="feedback-section-title">✕ Eksikler</div><ul class="feedback-list">${fb.eksikler.map(i=>`<li>${i}</li>`).join('')}</ul></div>` : ''}
+        ${fb.gelistirilmis_formülasyon ? `<div class="feedback-section" style="border-left:3px solid var(--accent);"><div class="feedback-section-title">Geliştirilmiş Formülasyon</div><div style="display:flex;flex-direction:column;gap:6px;">${Object.entries(fb.gelistirilmis_formülasyon).map(([k,v])=>`<div><span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;">${k}:</span><br><span style="font-size:13px;color:var(--text2);">${v}</span></div>`).join('')}</div></div>` : ''}
+        ${fb.sonraki_adim ? `<div class="feedback-section warn"><div class="feedback-section-title">→ Sonraki Adım</div><div class="feedback-text">${fb.sonraki_adim}</div></div>` : ''}
+      </div>`;
+  } catch (e) {
+    result.innerHTML = `<div style="color:var(--danger);">Hata: ${e.message}</div>`;
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── UTILS ──────────────────────────────────────────────────────────────────
+function setLoading(on) {
+  document.getElementById('typing')?.classList.toggle('visible', on);
+  const btn = document.getElementById('send-btn');
+  if (btn) btn.disabled = on;
+  document.getElementById('loading-bar').classList.toggle('active', on);
+  if (on) document.getElementById('messages')?.scrollTo(0, 99999);
+}
+
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+</script>
+</body>
+</html>
