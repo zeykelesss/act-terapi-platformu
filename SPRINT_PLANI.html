@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>ACT LAB — 2 Haftalık Sprint Planı</title>
+<style>
+  @media print {
+    .page-break { page-break-before: always; }
+    body { font-size: 11px; }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    color: #1a1a1a;
+    background: #fff;
+    line-height: 1.6;
+    padding: 40px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* COVER */
+  .cover { text-align: center; padding: 80px 0 60px; }
+  .cover h1 { font-size: 52px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px; }
+  .cover .sub { font-size: 18px; color: #666; margin-bottom: 20px; }
+  .cover .line { width: 60px; height: 3px; background: #c93030; margin: 0 auto 24px; }
+  .cover .meta { font-size: 13px; color: #999; line-height: 2; }
+
+  .legend { display: flex; justify-content: center; gap: 20px; margin-top: 30px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #666; }
+  .badge { display: inline-block; padding: 3px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; color: #fff; }
+  .badge.sen { background: #1a1a1a; }
+  .badge.o { background: #c93030; }
+  .badge.birlikte { background: #3070c0; }
+
+  /* SECTIONS */
+  h2 { font-size: 24px; font-weight: 800; margin: 40px 0 12px; padding-bottom: 8px; border-bottom: 2px solid #eee; }
+  h2.hafta1 { color: #c93030; border-color: #c93030; }
+  h2.hafta2 { color: #3070c0; border-color: #3070c0; }
+  h3 { font-size: 16px; font-weight: 700; margin: 24px 0 8px; color: #333; }
+  p { font-size: 14px; color: #444; margin-bottom: 12px; }
+
+  /* DAY HEADER */
+  .day { background: #333; color: #fff; padding: 8px 16px; font-size: 13px; font-weight: 700; margin: 28px 0 16px; border-radius: 4px; }
+
+  /* TASK CARD */
+  .task { background: #fafafa; border: 1px solid #e8e8e8; border-radius: 8px; padding: 16px 20px; margin-bottom: 14px; }
+  .task-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .task-title { font-size: 15px; font-weight: 700; color: #1a1a1a; }
+  .task-detail { font-size: 13px; color: #555; line-height: 1.7; white-space: pre-line; }
+  .task-detail ul { margin: 6px 0 6px 20px; }
+  .task-detail li { margin-bottom: 3px; }
+
+  /* BULLETS */
+  ul.main { list-style: none; padding: 0; }
+  ul.main li { font-size: 14px; color: #444; padding: 5px 0 5px 20px; position: relative; }
+  ul.main li::before { content: "•"; position: absolute; left: 4px; color: #999; font-weight: bold; }
+
+  /* CHECKLIST */
+  .checklist { list-style: none; padding: 0; }
+  .checklist li { font-size: 13px; color: #444; padding: 6px 0 6px 28px; position: relative; border-bottom: 1px solid #f0f0f0; }
+  .checklist li::before { content: "☐"; position: absolute; left: 4px; font-size: 15px; color: #bbb; }
+
+  /* INFO BOX */
+  .info-box { background: #f7f5f0; border-left: 4px solid #d4a030; padding: 14px 18px; margin: 16px 0; border-radius: 0 6px 6px 0; font-size: 13px; color: #555; }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th { background: #f4f4f4; padding: 8px 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd; }
+  td { padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
+
+  .footer { text-align: center; color: #ccc; font-size: 11px; margin-top: 60px; padding-top: 20px; border-top: 1px solid #eee; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ KAPAK ═══════════════════ -->
+<div class="cover">
+  <h1>ACT LAB</h1>
+  <div class="sub">2 Haftalık Launch Sprint Planı</div>
+  <div class="line"></div>
+  <div class="meta">
+    Tarih: 17 Nisan — 30 Nisan 2026<br>
+    Ekip: 2 kişi (Backend + Frontend/Branding)<br>
+    Hedef: Pazarlanabilir, güvenli, markalı ürün
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="badge sen">SEN</span> Backend / Infra</div>
+    <div class="legend-item"><span class="badge o">O</span> Frontend / Branding</div>
+    <div class="legend-item"><span class="badge birlikte">BİRLİKTE</span> İkisi beraber</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MEVCUT DURUM ═══════════════════ -->
+<div class="page-break"></div>
+<h2>Mevcut Durum: Neredeyiz?</h2>
+<p>ACT LAB şu an çalışan bir prototip. 6 modülü var, AI destekli terapi simülasyonu yapabiliyor. Ama pazara çıkmadan önce çözülmesi gereken ciddi sorunlar var:</p>
+
+<h3>Kritik Sorunlar</h3>
+<ul class="main">
+  <li><strong>GÜVENLİK:</strong> Kullanıcı şifreleri düz metin olarak localStorage'da saklanıyor. Herkes DevTools ile premium'a geçebilir. API key korumasız — biri sınırsız istek atıp Groq faturanızı şişirebilir.</li>
+  <li><strong>XSS AÇIĞI:</strong> Kullanıcı mesajları innerHTML ile basılıyor. Kötü niyetli input ile sayfa üzerinde kod çalıştırılabilir.</li>
+  <li><strong>VERİ TEKRARI:</strong> 12 danışan profili, 8 senaryo, 12 metafor hem server (prompts.js) hem client (index.html) tarafında ayrı ayrı tanımlı. Birini güncellersen diğeri eski kalır.</li>
+  <li><strong>MOBİL ÇALIŞMIYOR:</strong> Hexaflex 580px sabit, padding'ler sabit px. Telefondan kullanılamaz.</li>
+  <li><strong>VERİ KAYBOLUR:</strong> Sayfa yenilenince seans geçmişi sıfırlanır. Kullanıcı ilerlemesi kayıt altına alınmıyor.</li>
+</ul>
+
+<h3>Güçlü Yanlar</h3>
+<ul class="main">
+  <li><strong>Rakipsiz niş:</strong> ACT spesifik + Türkçe + terapist eğitimi. Bu kombinasyonda piyasada ciddi bir ürün yok.</li>
+  <li><strong>Klinik içerik çok iyi:</strong> Russ Harris bazlı, gerçekçi 12 danışan profili, detaylı prompt sistemi.</li>
+  <li><strong>6 modül zaten çalışıyor:</strong> Simülasyon, Süpervizör, Akademi, Zor Anlar, Metafor, Vaka Formülasyonu.</li>
+  <li><strong>Hızlı ve ucuz AI:</strong> Groq + Llama 3.3 70B = düşük gecikme, düşük maliyet.</li>
+</ul>
+
+<!-- ═══════════════════ HAFTA 1 ═══════════════════ -->
+<div class="page-break"></div>
+<h2 class="hafta1">HAFTA 1 — Temel & Branding (17-23 Nisan)</h2>
+<p>Bu hafta iki paralel iş kolu var: Sen altyapıyı güvenli hale getirirken, o brand kimliğini oluşturuyor. Hafta sonunda güvenli, markalı, responsive bir ürün olacak.</p>
+
+<!-- GÜN 1-2 -->
+<div class="day">GÜN 1-2 · Perşembe-Cuma (17-18 Nisan)</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge birlikte">BİRLİKTE</span><span class="task-title">Git yapısını kur + Branding karar toplantısı</span></div>
+  <div class="task-detail">İlk iş: main branch'i korumaya al, dev branch aç, feat/ branch'lerle çalışmaya başla.
+
+Sonra oturup şu kararları alın:
+<ul>
+  <li>Platform adı kesinleşsin: ACT LAB mı kalıyor, başka bir isim mi?</li>
+  <li>Ana renk (accent color) ne olacak? Şu anki siyah-bej iyi ama marka rengi lazım.</li>
+  <li>Logo fikri: Hexaflex şeklinden türetilebilir.</li>
+  <li>Tipografi: Şu anki font stack (Syne + Inter + IBM Plex Mono) kalacak mı?</li>
+</ul></div>
+</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge birlikte">BİRLİKTE</span><span class="task-title">index.html'i 3 dosyaya böl (ZORUNLU)</span></div>
+  <div class="task-detail">2144 satırlık tek dosyada ikiniz aynı anda çalışırsanız sürekli git conflict olur. 30 dakikalık bu iş 2 hafta boyunca sizi kurtarır:
+<ul>
+  <li><strong>public/style.css</strong> → Tüm CSS'i taşı (satır 9-694)</li>
+  <li><strong>public/app.js</strong> → Tüm JavaScript'i taşı (satır 995-2142)</li>
+  <li><strong>public/index.html</strong> → Sadece HTML yapısı kalsın</li>
+  <li>index.html'e ekle: &lt;link rel="stylesheet" href="style.css"&gt; ve &lt;script src="app.js"&gt;&lt;/script&gt;</li>
+</ul></div>
+</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge sen">SEN</span><span class="task-title">XSS güvenlik açıklarını kapat</span></div>
+  <div class="task-detail">index.html'deki tüm innerHTML kullanımlarını bul (yaklaşık 15+ yer). Kullanıcı inputu içeren yerlerde textContent kullan veya DOMPurify kütüphanesi ekle.
+
+Özellikle kritik yerler:
+<ul>
+  <li>Mesaj baloncukları (addMessage fonksiyonu)</li>
+  <li>Süpervizör paneli (renderSupervisorFeedback)</li>
+  <li>Akademi içerik render (loadAcademy)</li>
+</ul>
+<strong>Test:</strong> Mesaj kutusuna &lt;img onerror=alert(1) src=x&gt; yaz — çalışmamalı.</div>
+</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge sen">SEN</span><span class="task-title">API güvenlik katmanı ekle</span></div>
+  <div class="task-detail"><strong>npm install express-rate-limit helmet</strong>
+
+server.js'e ekle:
+<ul>
+  <li>express-rate-limit: IP başına dakikada max 20 istek</li>
+  <li>Helmet: HTTP güvenlik header'ları (2 satır kod)</li>
+  <li>CORS'u sadece kendi domain'ine kısıtla (şimdilik localhost + production URL)</li>
+</ul></div>
+</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge o">O</span><span class="task-title">Brand identity çalışması başlat</span></div>
+  <div class="task-detail">
+<ul>
+  <li><strong>Logo tasarımı:</strong> Hexaflex (altıgen) şeklinden yola çıkarak minimal bir logo</li>
+  <li><strong>Renk paleti:</strong> Ana renk + 2 destekleyici renk. Referans: Calm, Headspace gibi wellness app'leri ama daha profesyonel/klinik</li>
+  <li><strong>Moodboard:</strong> Figma, Pinterest veya kağıt üstünde — genel estetik hissi</li>
+</ul></div>
+</div>
+
+<!-- GÜN 3-4 -->
+<div class="day">GÜN 3-4 · Cumartesi-Pazar (19-20 Nisan)</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge sen">SEN</span><span class="task-title">Gerçek auth sistemi kur</span></div>
+  <div class="task-detail"><strong>Önerilen: Supabase Auth</strong> (email/şifre ile signup/login, JWT otomatik, 2-3 saatte biter)
+
+Yapılacaklar:
+<ul>
+  <li>Supabase projesi oluştur (supabase.com — ücretsiz)</li>
+  <li>POST /api/auth/register → Supabase'e kayıt</li>
+  <li>POST /api/auth/login → JWT token dön</li>
+  <li>Auth middleware → her API isteğinde token doğrulama</li>
+  <li>Frontend'deki localStorage auth'u gerçek JWT'ye çevir</li>
+  <li>Premium/free plan bilgisi DB'de tutulsun, client'ta değil</li>
+</ul>
+
+<strong>Alternatif (daha yavaş):</strong> bcrypt + jsonwebtoken + SQLite. Daha fazla kontrol ama daha uzun sürer.</div>
+</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge o">O</span><span class="task-title">Landing page (hero section) yeniden tasarla</span></div>
+  <div class="task-detail">Branding kararlarına göre hero'yu güncelle:
+<ul>
+  <li>Yeni logo ve renklerle hero section</li>
+  <li>Value proposition net olsun: "AI ile ACT terapi pratiği yap"</li>
+  <li>Social proof: "12 gerçekçi danışan profili", "6 eğitim modülü"</li>
+  <li>CTA butonları: "Ücretsiz Başla" + "Premium Keşfet"</li>
+</ul></div>
+</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge o">O</span><span class="task-title">Responsive CSS: Mobil uyumluluk</span></div>
+  <div class="task-detail">Kritik kırılma noktaları: 768px (tablet), 480px (mobil)
+
+Öncelikli alanlar:
+<ul>
+  <li><strong>Navbar:</strong> Hamburger menü ekle (mobilde nav-links gizlensin)</li>
+  <li><strong>Hexaflex:</strong> 580px sabit boyutu kaldır → mobilde liste görünümüne geç</li>
+  <li><strong>Chat alanı:</strong> Mobilde tam ekran, padding'leri küçült</li>
+  <li><strong>Profil kartları:</strong> Tek sütun grid</li>
+  <li><strong>Metafor carousel:</strong> Touch/swipe desteği</li>
+</ul></div>
+</div>
+
+<!-- GÜN 5 -->
+<div class="day">GÜN 5 · Pazartesi (21 Nisan)</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge sen">SEN</span><span class="task-title">Veritabanı + Seans kayıt sistemi</span></div>
+  <div class="task-detail">Supabase tablolar:
+<ul>
+  <li><strong>users</strong> (id, email, name, plan, created_at)</li>
+  <li><strong>sessions</strong> (id, user_id, profile_id, messages_json, supervisor_feedback, score, created_at)</li>
+  <li><strong>progress</strong> (user_id, module, total_sessions, avg_scores_json)</li>
+</ul>
+
+Endpoint'ler:
+<ul>
+  <li>POST /api/sessions/save → seans bitince transkripti kaydet</li>
+  <li>GET /api/sessions → kullanıcının seans geçmişi</li>
+  <li>GET /api/progress → yetkinlik puanları</li>
+</ul></div>
+</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge o">O</span><span class="task-title">Branding asset'leri üret</span></div>
+  <div class="task-detail">
+<ul>
+  <li>Favicon (32x32, 16x16) + Apple touch icon (180x180)</li>
+  <li>OG image (1200x630) → sosyal medya paylaşımı için</li>
+  <li>App manifest.json (PWA hazırlığı)</li>
+  <li>Font loading optimize et (preload ekle)</li>
+</ul></div>
+</div>
+
+<!-- GÜN 6-7 -->
+<div class="day">GÜN 6-7 · Salı-Çarşamba (22-23 Nisan)</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge sen">SEN</span><span class="task-title">Veri duplikasyonunu temizle</span></div>
+  <div class="task-detail">Profiller, senaryolar, metaforlar HEM server HEM client tarafında ayrı ayrı tanımlı. Bu tehlikeli.
+
+<strong>Çözüm:</strong> Verileri sadece server'da tut, client API ile çeksin.
+<ul>
+  <li>GET /api/profiles → danışan profilleri</li>
+  <li>GET /api/scenarios → zor an senaryoları</li>
+  <li>GET /api/metaphors → metafor verileri</li>
+  <li>Client'taki PROFILES, SCENARIOS, METAPHOR_DATA const'larını kaldır, fetch ile değiştir</li>
+</ul></div>
+</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge sen">SEN</span><span class="task-title">Deploy altyapısını hazırla</span></div>
+  <div class="task-detail">
+<ul>
+  <li>Railway.app veya Fly.io (ücretsiz tier)</li>
+  <li>Dockerfile veya Procfile oluştur</li>
+  <li>Environment variables: GROQ_API_KEY, SUPABASE_URL, SUPABASE_KEY, JWT_SECRET</li>
+  <li>Custom domain bağlantısı hazırlığı</li>
+</ul></div>
+</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge o">O</span><span class="task-title">Tüm sayfaları mobil test et + polish</span></div>
+  <div class="task-detail">Her sayfayı iPhone SE ve iPad boyutunda test et:
+<ul>
+  <li>Hero section: Orb animasyonu mobilde gizlenebilir (performans)</li>
+  <li>Chat: Klavye açıldığında input kaybolmamalı</li>
+  <li>Süpervizör paneli: Mobilde full-screen overlay olmalı</li>
+  <li>Vaka formülasyonu: Textarea'lar mobilde rahat kullanılmalı</li>
+</ul></div>
+</div>
+
+<!-- ═══════════════════ HAFTA 2 ═══════════════════ -->
+<div class="page-break"></div>
+<h2 class="hafta2">HAFTA 2 — Killer Feature & Launch (24-30 Nisan)</h2>
+<p>Bu hafta ürünü rakiplerden ayıracak özellikler ekleniyor: kişisel gelişim takibi, seans geçmişi ve ödeme. Hafta sonunda launch.</p>
+
+<!-- GÜN 8-9 -->
+<div class="day">GÜN 8-9 · Perşembe-Cuma (24-25 Nisan)</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge sen">SEN</span><span class="task-title">Yetkinlik haritası API'si</span></div>
+  <div class="task-detail">Her süpervizör geri bildiriminden 6 ACT süreci puanını kaydet:
+kabul, bilişsel ayrışma, anda olma, bağlam olarak benlik, değerler, kararlı eylem
+
+<ul>
+  <li>POST /api/progress/update → seans sonrası puanları kaydet</li>
+  <li>GET /api/progress/hexaflex → ortalama puanlar + zaman serisi</li>
+  <li>GET /api/progress/summary → toplam seans, en güçlü/zayıf alan, streak</li>
+</ul></div>
+</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge o">O</span><span class="task-title">Dashboard UI: Kişisel gelişim sayfası</span></div>
+  <div class="task-detail">Yeni bir "Dashboard" view ekle (nav'a da eklenecek):
+<ul>
+  <li><strong>Hexaflex üzerinde kişisel puanlar</strong> — renk yoğunluğu ile göster (düşük=açık, yüksek=koyu)</li>
+  <li><strong>Son 5 seans listesi</strong> — danışan adı, tarih, genel puan</li>
+  <li><strong>Streak sayacı:</strong> "Bu hafta 3 seans yaptın"</li>
+  <li><strong>En güçlü ve en zayıf alan</strong> vurgusu</li>
+  <li><strong>Önerilen sonraki adım:</strong> zayıf alana göre otomatik öneri</li>
+</ul></div>
+</div>
+
+<!-- GÜN 10-11 -->
+<div class="day">GÜN 10-11 · Cumartesi-Pazar (26-27 Nisan)</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge sen">SEN</span><span class="task-title">Seans geçmişi: replay ve detay</span></div>
+  <div class="task-detail">
+<ul>
+  <li>GET /api/sessions/:id → tekil seans detayı (transkript + feedback)</li>
+  <li>Transkripti formatlı gösterme (terapist/danışan ayrımı)</li>
+  <li>Süpervizör geri bildirimini tekrar görüntüleme</li>
+  <li>DELETE /api/sessions/:id → seans silme</li>
+</ul></div>
+</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge o">O</span><span class="task-title">Seans geçmişi UI + Transkript görüntüleme</span></div>
+  <div class="task-detail">
+<ul>
+  <li>Dashboard'a "Geçmiş Seanslar" tab'ı ekle</li>
+  <li>Her seans kartında: danışan adı, tarih, süre, puan</li>
+  <li>Tıklayınca transkript açılsın (chat görünümünde)</li>
+  <li>Süpervizör paneli tekrar görüntülenebilsin</li>
+  <li>Boş state: "Henüz seans yapmadın, hemen başla!"</li>
+</ul></div>
+</div>
+
+<!-- GÜN 12 -->
+<div class="day">GÜN 12 · Pazartesi (28 Nisan)</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge sen">SEN</span><span class="task-title">Ödeme sistemi VEYA waitlist</span></div>
+  <div class="task-detail"><strong>SEÇENEK A — iyzico (Türkiye için):</strong>
+<ul>
+  <li>npm install iyzipay</li>
+  <li>Checkout flow: plan seç → ödeme → premium aktif</li>
+  <li>Webhook: ödeme başarılı → DB'de plan güncelle</li>
+</ul>
+
+<strong>SEÇENEK B — Waitlist (daha hızlı, ödemeyi sonraya bırak):</strong>
+<ul>
+  <li>Ücretsiz kullanım (limitli)</li>
+  <li>"Premium çok yakında" banner</li>
+  <li>Email toplama formu (Supabase'e kaydet)</li>
+</ul></div>
+</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge o">O</span><span class="task-title">Pricing section + CTA polish</span></div>
+  <div class="task-detail">
+<ul>
+  <li>Landing page'e pricing kartları ekle (Free vs Premium)</li>
+  <li>Feature comparison tablosu</li>
+  <li>Premium modal'ı güncelle: yeni branding ile</li>
+  <li>Upgrade flow: smooth, korkutucu değil</li>
+</ul></div>
+</div>
+
+<!-- GÜN 13-14 -->
+<div class="day">GÜN 13-14 · Salı-Çarşamba (29-30 Nisan)</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge birlikte">BİRLİKTE</span><span class="task-title">Production deploy + Son testler</span></div>
+  <div class="task-detail">
+<ul>
+  <li>Railway/Fly.io'ya deploy et</li>
+  <li>Custom domain bağla (actlab.app, actlab.co.tr, vs.)</li>
+  <li>SSL çalışıyor mu kontrol et</li>
+  <li>Tüm modülleri production'da test et</li>
+  <li>Mobil test (gerçek telefonda)</li>
+  <li><strong>Uçtan uca test:</strong> Signup → Login → Seans → Süpervizör → Dashboard</li>
+</ul></div>
+</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge o">O</span><span class="task-title">Launch hazırlığı: Sosyal medya + içerik</span></div>
+  <div class="task-detail">
+<ul>
+  <li>Instagram/Twitter/LinkedIn post tasarımları</li>
+  <li>3-4 adet tanıtım görseli (özellik showcase)</li>
+  <li>Kısa tanıtım metni: "ACT Lab nedir, kimin için?"</li>
+  <li>Hedef kitle: Psikoloji öğrencileri, yeni terapistler, ACT meraklıları</li>
+</ul></div>
+</div>
+
+<div class="task">
+  <div class="task-header"><span class="badge sen">SEN</span><span class="task-title">Monitoring + Analytics</span></div>
+  <div class="task-detail">
+<ul>
+  <li>Plausible veya Umami (privacy-friendly analytics)</li>
+  <li>Sentry free tier (error tracking)</li>
+  <li>Uptime monitoring (BetterUptime free)</li>
+  <li>Groq API kullanım takibi (maliyet kontrolü)</li>
+</ul></div>
+</div>
+
+<!-- ═══════════════════ GIT WORKFLOW ═══════════════════ -->
+<div class="page-break"></div>
+<h2>Git Çalışma Düzeni</h2>
+<p>İkiniz aynı repo'da çalışırken birbirinizin kodunu bozmamak için bu yapıyı kullanın:</p>
+
+<h3>Branch Yapısı</h3>
+<table>
+  <tr><th>Branch</th><th>Kim?</th><th>Ne için?</th></tr>
+  <tr><td><strong>main</strong></td><td>Korumalı</td><td>Production. Direkt push YOK.</td></tr>
+  <tr><td><strong>dev</strong></td><td>İkisi</td><td>Merge noktası. Feature bittikçe buraya PR.</td></tr>
+  <tr><td>feat/security</td><td>Sen</td><td>XSS fix, rate limiting, helmet</td></tr>
+  <tr><td>feat/auth</td><td>Sen</td><td>JWT, Supabase Auth, kullanıcı sistemi</td></tr>
+  <tr><td>feat/db</td><td>Sen</td><td>Veritabanı, seans kayıt, API endpoint'ler</td></tr>
+  <tr><td>feat/branding</td><td>O</td><td>Logo, renkler, hero, responsive CSS</td></tr>
+  <tr><td>feat/dashboard</td><td>Birlikte</td><td>Yetkinlik haritası, seans geçmişi UI</td></tr>
+</table>
+
+<h3>Günlük Rutin</h3>
+<ul class="main">
+  <li><strong>Sabah:</strong> git pull origin dev ile güncel kodu çek</li>
+  <li>Kendi branch'inde çalış: git checkout feat/xxx</li>
+  <li>Sık commit at. Küçük, anlamlı commit'ler.</li>
+  <li>Feature bitince: dev'e PR aç, diğer kişi gözden geçirip merge etsin.</li>
+  <li><strong>Akşam:</strong> İkisi de dev'den pull alıp son durumu görsün.</li>
+</ul>
+
+<div class="info-box">
+  <strong>Önemli:</strong> En çok çakışacak dosya index.html (2144 satır). Bu yüzden Gün 1'de HTML'i 3 dosyaya bölmek ZORUNLU. CSS'i o düzenlerken, JS'i sen düzenlersin — conflict olmaz.
+</div>
+
+<!-- ═══════════════════ BRANDING ═══════════════════ -->
+<div class="page-break"></div>
+<h2>Branding Rehberi</h2>
+<p>Gün 1'de oturup bu kararları alın. Karar alınca hemen uygulamaya geçin, tartışmaya boğulmayın.</p>
+
+<h3>1. Platform Adı</h3>
+<table>
+  <tr><th>İsim</th><th>Artı</th><th>Eksi</th></tr>
+  <tr><td><strong>ACT LAB</strong></td><td>Kısa, net, "lab" = pratik/deneysel vurgusu</td><td>Genel olabilir</td></tr>
+  <tr><td>Hexaflex</td><td>ACT'in 6 sürecine doğrudan referans</td><td>Dar kitle bilir</td></tr>
+  <tr><td>Seans Lab</td><td>Geniş çağrışım</td><td>ACT spesifikliği kaybolur</td></tr>
+  <tr><td>Praxis</td><td>Sofistike, "pratik" anlamı</td><td>Zor telaffuz</td></tr>
+</table>
+
+<h3>2. Renk Paleti Önerileri</h3>
+<p>Şu anki bej/nötr zemin (#eceae6) çok iyi. Üstüne TEK bir marka rengi seçin:</p>
+<table>
+  <tr><th>Renk</th><th>Kod</th><th>His</th></tr>
+  <tr><td>Koyu Yeşil</td><td>#2e7d5b</td><td>Büyüme, terapi, doğallık (Calm vibes)</td></tr>
+  <tr><td>Koyu Mavi</td><td>#2050c0</td><td>Güven, profesyonellik, klinik ciddiyet</td></tr>
+  <tr><td>Sıcak Turuncu</td><td>#d46830</td><td>Enerji, sıcaklık, hexaflex uyumu</td></tr>
+</table>
+
+<h3>3. Logo</h3>
+<p>Hexaflex (altıgen) şeklinden türetilmiş minimal bir logomark + "ACT LAB" wordmark. İlk launch için mükemmel olması şart değil — temiz ve profesyonel olması yeterli. Canva veya Figma ile yapılabilir.</p>
+
+<h3>4. Tone of Voice</h3>
+<ul class="main">
+  <li><strong>Klinik ama samimi:</strong> "Biz profesyonel bir araçız ama seni korkutmayız."</li>
+  <li><strong>Türkçe doğallık:</strong> Jargon'u açıkla, akademik dil kullanma.</li>
+  <li><strong>Empowering:</strong> "Öğren, pratik yap, geliş" — kullanıcı güçlensin.</li>
+</ul>
+
+<!-- ═══════════════════ LAUNCH CHECKLIST ═══════════════════ -->
+<div class="page-break"></div>
+<h2>Launch Checklist</h2>
+<p>Launch günü bu listeyi kontrol edin. Hepsi tamam olmadan launch yok:</p>
+
+<h3>Güvenlik</h3>
+<ul class="checklist">
+  <li>XSS açıkları kapatıldı (innerHTML temizlendi)</li>
+  <li>API rate limiting aktif</li>
+  <li>Şifreler hash'leniyor (bcrypt veya Supabase)</li>
+  <li>JWT auth çalışıyor</li>
+  <li>CORS sadece kendi domain'e açık</li>
+  <li>GROQ_API_KEY environment variable'da, kodda değil</li>
+  <li>Helmet middleware aktif</li>
+</ul>
+
+<h3>Ürün</h3>
+<ul class="checklist">
+  <li>Signup → Login → Seans → Süpervizör akışı çalışıyor</li>
+  <li>Tüm 6 modül çalışıyor</li>
+  <li>Seans geçmişi kaydediliyor ve görüntülenebiliyor</li>
+  <li>Free/Premium ayrımı düzgün çalışıyor</li>
+  <li>Hata durumlarında kullanıcıya anlamlı mesaj gösteriliyor</li>
+  <li>LLM JSON parse hataları yakalanıyor</li>
+</ul>
+
+<h3>Branding & Tasarım</h3>
+<ul class="checklist">
+  <li>Logo yerleştirildi (navbar, favicon, OG image)</li>
+  <li>Renk paleti uygulandı</li>
+  <li>Responsive: iPhone SE'de düzgün görünüyor</li>
+  <li>Responsive: iPad'de düzgün görünüyor</li>
+  <li>Meta taglar: title, description, OG tags</li>
+  <li>Favicon + Apple touch icon</li>
+</ul>
+
+<h3>Deploy & İzleme</h3>
+<ul class="checklist">
+  <li>Production deploy çalışıyor</li>
+  <li>Custom domain + SSL aktif</li>
+  <li>Analytics kuruldu</li>
+  <li>Error tracking kuruldu</li>
+  <li>Sosyal medya görselleri hazır</li>
+  <li>Launch metni hazır</li>
+</ul>
+
+<!-- ═══════════════════ TEKNİK NOTLAR ═══════════════════ -->
+<div class="page-break"></div>
+<h2>Teknik Notlar</h2>
+
+<h3>Eklenecek Paketler</h3>
+<table>
+  <tr><th>Paket</th><th>Ne için?</th><th>Kurulum</th></tr>
+  <tr><td>express-rate-limit</td><td>API koruması</td><td>npm i express-rate-limit</td></tr>
+  <tr><td>helmet</td><td>HTTP güvenlik header'ları</td><td>npm i helmet</td></tr>
+  <tr><td>@supabase/supabase-js</td><td>DB + Auth</td><td>npm i @supabase/supabase-js</td></tr>
+  <tr><td>DOMPurify (CDN)</td><td>XSS koruması (client)</td><td>script tag ile ekle</td></tr>
+</table>
+
+<h3>Maliyet Tahmini (Aylık)</h3>
+<table>
+  <tr><th>Servis</th><th>Free Tier</th><th>Yeterli mi?</th></tr>
+  <tr><td>Supabase</td><td>500MB DB, 50K user, 2GB bant</td><td>Evet, ilk 1000+ kullanıcıya kadar</td></tr>
+  <tr><td>Railway / Fly.io</td><td>$5 kredi / 3 shared CPU</td><td>Evet, başlangıç için</td></tr>
+  <tr><td>Groq</td><td>14,400 istek/gün</td><td>Evet, ilk 100+ aktif kullanıcıya kadar</td></tr>
+  <tr><td>Domain</td><td>—</td><td>~$10-15/yıl</td></tr>
+  <tr><td colspan="2"><strong>Toplam</strong></td><td><strong>$0-5/ay</strong> (free tier'larla)</td></tr>
+</table>
+
+<div class="info-box">
+  <strong>İlk gün yapılacak en önemli refactor:</strong> public/index.html'i 3 dosyaya böl (style.css, app.js, index.html). 30 dakikalık iş ama 2 hafta boyunca git conflict'ten kurtarır. CSS dosyasında O çalışır, JS dosyasında Sen çalışırsın.
+</div>
+
+<div class="footer">
+  Bu plan Claude ile birlikte hazırlandı — 16 Nisan 2026<br>
+  Hadi başlayalım.
+</div>
+
+</body>
+</html>
