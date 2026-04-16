@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import path from "path";
 import { fileURLToPath } from "url";
 import Groq from "groq-sdk";
@@ -9,14 +11,46 @@ import { PROMPTS } from "./prompts.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+// ── SECURITY ───────────────────────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      connectSrc: ["'self'"],
+      imgSrc: ["'self'", "data:"],
+    },
+  },
+}));
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Çok fazla istek. Lütfen biraz bekle." },
+});
+app.use("/api/", apiLimiter);
+
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGIN || "*",
+}));
+app.use(express.json({ limit: "16kb" }));
 
 // Frontend'i serve et
 app.use(express.static(path.join(__dirname, "public")));
 
-// Groq client
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Groq client (lazy — sunucu API key olmadan da ayağa kalksın)
+let _groq;
+function groq() {
+  if (!_groq) {
+    if (!process.env.GROQ_API_KEY) throw new Error("GROQ_API_KEY tanımlı değil");
+    _groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  }
+  return _groq;
+}
 
 // ── API ROUTES ──────────────────────────────────────────────────────────────
 
@@ -24,7 +58,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 app.post("/api/session", async (req, res) => {
   const { messages, clientProfile } = req.body;
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await groq().chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: PROMPTS.simulatedSession(clientProfile) },
@@ -47,7 +81,7 @@ app.post("/api/supervisor", async (req, res) => {
     .map((m) => `${m.role === "user" ? "TERAPİST" : "DANIŞAN"}: ${m.content}`)
     .join("\n");
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await groq().chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: PROMPTS.supervisor(clientProfile) },
@@ -67,7 +101,7 @@ app.post("/api/supervisor", async (req, res) => {
 app.post("/api/academy", async (req, res) => {
   const { topic } = req.body;
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await groq().chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: PROMPTS.academy(topic) },
@@ -87,7 +121,7 @@ app.post("/api/academy", async (req, res) => {
 app.post("/api/difficult", async (req, res) => {
   const { scenario, therapistResponse } = req.body;
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await groq().chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: PROMPTS.difficultMoment(scenario) },
@@ -110,7 +144,7 @@ app.post("/api/difficult", async (req, res) => {
 app.post("/api/case-formulation", async (req, res) => {
   const { formulation } = req.body;
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await groq().chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: PROMPTS.caseFormulation() },
@@ -133,7 +167,7 @@ app.post("/api/case-formulation", async (req, res) => {
 app.post("/api/metaphor", async (req, res) => {
   const { metaphorName, userScenario } = req.body;
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await groq().chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: PROMPTS.metaphorLab() },
