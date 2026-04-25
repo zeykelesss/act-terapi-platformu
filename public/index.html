@@ -3,7 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ACT Terapi Eğitim Platformu</title>
+<title>ACT Lab — Terapi Eğitim Platformu</title>
+<!-- OG / Social -->
+<meta property="og:title" content="ACT LAB — Terapi Eğitim Platformu">
+<meta property="og:description" content="Gerçek seanslar için gerçekçi hazırlık. Simülasyonla öğren, metaforlarla pratik yap, süpervizörden geri bildirim al.">
+<meta property="og:image" content="/og-image.png">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="tr_TR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ACT LAB — Terapi Eğitim Platformu">
+<meta name="twitter:description" content="Gerçek seanslar için gerçekçi hazırlık.">
+<meta name="twitter:image" content="/og-image.png">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<meta name="theme-color" content="#0d0d0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ACT Lab">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -11,7 +30,10 @@
 <body>
 
 <nav class="topnav">
-  <div class="nav-logo" onclick="showView('home')">ACT LAB</div>
+  <div class="nav-logo" onclick="showView('home')">
+    <div class="nav-logo-lines"><span></span><span></span><span></span></div>
+    <span class="nav-logo-act">ACT LAB</span>
+  </div>
   <div class="nav-links">
     <span class="nav-link active" onclick="showView('home')">Ana Sayfa</span>
     <span class="nav-link" onclick="showView('session-select')">Simülasyon Lab</span>
@@ -24,7 +46,23 @@
     <button class="btn" onclick="openLogin()">Giriş Yap</button>
     <button class="btn primary" onclick="openRegister()">Kayıt Ol</button>
   </div>
+  <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileMenu()" aria-label="Menü">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+
+<div class="mobile-menu" id="mobile-menu">
+  <span class="mobile-nav-link" onclick="showView('home');closeMobileMenu()">Ana Sayfa</span>
+  <span class="mobile-nav-link" onclick="showView('session-select');closeMobileMenu()">Simülasyon Lab</span>
+  <span class="mobile-nav-link" onclick="showView('academy');closeMobileMenu()">Akademi Lab</span>
+  <span class="mobile-nav-link" onclick="showView('difficult');closeMobileMenu()">Zor Anlar Lab</span>
+  <span class="mobile-nav-link" onclick="showView('metaphor');closeMobileMenu()">Metafor Lab</span>
+  <span class="mobile-nav-link" onclick="showView('case');closeMobileMenu()">Vaka Formülasyon Lab</span>
+  <div class="mobile-menu-actions">
+    <button class="btn" style="width:100%;" onclick="openLogin();closeMobileMenu()">Giriş Yap</button>
+    <button class="btn primary" style="width:100%;" onclick="openRegister();closeMobileMenu()">Kayıt Ol</button>
+  </div>
+</div>
 
 <main class="main">
   <div class="loading-bar" id="loading-bar"></div>
@@ -34,21 +72,16 @@
 
     <!-- HERO -->
     <section class="hero">
-      <div class="hero-content">
+      <div class="hero-left">
         <div class="hero-eyebrow">Terapi Eğitim Platformu</div>
         <h1 class="hero-title">ACT<br>LAB</h1>
+      </div>
+      <div class="hero-right">
         <p class="hero-sub">Gerçek seanslar için gerçekçi hazırlık. Simülasyonla öğren, metaforlarla pratik yap, süpervizörden geri bildirim al.</p>
         <div class="hero-actions" id="hero-actions">
           <button class="btn primary" onclick="openRegister()">Kayıt Ol</button>
           <button class="btn" onclick="openLogin()">Giriş Yap</button>
         </div>
-      </div>
-      <div class="orb-wrap">
-        <div class="orb"></div>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-num">12+</div>
-        <div class="hero-stat-label">Gerçekçi danışan<br>profili</div>
       </div>
     </section>
 
@@ -81,6 +114,53 @@
           <div class="module-title">Vaka Formülasyon Lab</div>
           <div class="module-desc">ACT odaklı vaka formülasyonu yap, süpervizörden düzeltme al.</div>
         </div>
+      </div>
+    </section>
+
+    <!-- PRICING -->
+    <section class="pricing-section">
+      <span class="section-label">Planlar</span>
+      <div class="pricing-table">
+
+        <div class="pt-head">
+          <div class="pricing-badge">Ücretsiz</div>
+          <div class="pricing-price">₺0<span class="pricing-period"> / ay</span></div>
+          <div class="pricing-desc">Temel modüllere erişim. Başlamak için yeterli.</div>
+        </div>
+        <div class="pt-head pt-head-premium">
+          <div class="pricing-badge">Premium</div>
+          <div class="pricing-price">₺199<span class="pricing-period"> / ay</span></div>
+          <div class="pricing-desc">Gerçek klinik hazırlık için eksiksiz erişim.</div>
+        </div>
+
+        <div class="pt-feat yes">Akademi Lab — 6 ACT süreci</div>
+        <div class="pt-feat yes prem">Akademi Lab — 6 ACT süreci</div>
+
+        <div class="pt-feat yes">Metafor Lab — 12 metafor</div>
+        <div class="pt-feat yes prem">Metafor Lab — 12 metafor</div>
+
+        <div class="pt-feat yes">3 simülasyon seansı</div>
+        <div class="pt-feat yes prem">Sınırsız simülasyon seansı</div>
+
+        <div class="pt-feat no">Süpervizör geri bildirimi</div>
+        <div class="pt-feat yes prem">Süpervizör geri bildirimi</div>
+
+        <div class="pt-feat no">Zor Anlar Lab</div>
+        <div class="pt-feat yes prem">Zor Anlar Lab — 8 senaryo</div>
+
+        <div class="pt-feat no">Vaka Formülasyon Lab</div>
+        <div class="pt-feat yes prem">Vaka Formülasyon Lab</div>
+
+        <div class="pt-feat no last">Seans geçmişi</div>
+        <div class="pt-feat yes prem last">Seans geçmişi & ilerleme takibi</div>
+
+        <div class="pt-cta">
+          <button class="pt-btn" onclick="openRegister()">Ücretsiz Başla →</button>
+        </div>
+        <div class="pt-cta pt-cta-premium">
+          <button class="pt-btn pt-btn-premium" onclick="openRegister()">Premium'a Geç →</button>
+        </div>
+
       </div>
     </section>
 
@@ -214,7 +294,7 @@
 <div class="modal-overlay" id="login-modal">
   <div class="modal">
     <button class="modal-close" onclick="closeLogin()">✕</button>
-    <div class="modal-logo">ACT LAB</div>
+    <div class="modal-logo"><div class="nav-logo-lines"><span></span><span></span><span></span></div><span class="nav-logo-act">ACT LAB</span></div>
     <div class="modal-title">Giriş Yap</div>
     <div class="modal-sub">Hesabına giriş yap ve kaldığın yerden devam et.</div>
     <form onsubmit="doLogin(event)">
@@ -239,7 +319,7 @@
 <div class="modal-overlay" id="register-modal">
   <div class="modal">
     <button class="modal-close" onclick="closeRegister()">✕</button>
-    <div class="modal-logo">ACT LAB</div>
+    <div class="modal-logo"><div class="nav-logo-lines"><span></span><span></span><span></span></div><span class="nav-logo-act">ACT LAB</span></div>
     <div class="modal-title">Kayıt Ol</div>
     <div class="modal-sub">Planını seç ve hemen öğrenmeye başla.</div>
     <form onsubmit="doRegister(event)">

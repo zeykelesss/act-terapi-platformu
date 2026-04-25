@@ -1,3 +1,15 @@
+// ── MOBILE MENU ────────────────────────────────────────────────────────────
+function toggleMobileMenu() {
+  const menu = document.getElementById('mobile-menu');
+  const btn  = document.getElementById('nav-hamburger');
+  const open = menu.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+function closeMobileMenu() {
+  document.getElementById('mobile-menu').classList.remove('open');
+  document.getElementById('nav-hamburger').classList.remove('open');
+}
+
 // ── SECURITY: HTML ESCAPE ─────────────────────────────────────────────────
 function esc(str) {
   const d = document.createElement('div');
@@ -402,11 +414,36 @@ function renderMetaphorCards() {
     <div class="carousel-section">
       <span class="carousel-label">Metaforlar — tıkla, detayını gör</span>
       <div class="carousel-wrapper">
-        <div class="carousel-track">
+        <div class="carousel-track" id="carousel-track">
           ${makeCards()}${makeCards()}
         </div>
       </div>
     </div>`;
+
+  const track = document.getElementById('carousel-track');
+  if (track) {
+    let startX = 0, isDragging = false, pausedAt = 0;
+    track.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      isDragging = true;
+      track.style.animationPlayState = 'paused';
+      const style = getComputedStyle(track);
+      const matrix = new DOMMatrix(style.transform);
+      pausedAt = matrix.m41;
+    }, { passive: true });
+    track.addEventListener('touchmove', e => {
+      if (!isDragging) return;
+      const dx = e.touches[0].clientX - startX;
+      track.style.transform = `translateX(${pausedAt + dx}px)`;
+      track.style.animation = 'none';
+    }, { passive: true });
+    track.addEventListener('touchend', () => {
+      isDragging = false;
+      track.style.animation = '';
+      track.style.transform = '';
+      track.style.animationPlayState = 'running';
+    });
+  }
 }
 
 function openMetaphorDetail(id) {
@@ -754,6 +791,16 @@ function renderHexaflex() {
       <div class="hexaflex-node-eng">${n.eng}</div>
     </div>`).join('');
 
+  const mobileList = HEXAFLEX_NODES.map(n => `
+    <div class="hf-list-item" onclick="loadAcademy('${n.key}','${n.name}')" style="--node-color:${n.color}">
+      <div class="hf-list-dot"></div>
+      <div class="hf-list-text">
+        <div class="hf-list-name">${n.name}</div>
+        <div class="hf-list-eng">${n.eng}</div>
+      </div>
+      <div class="hf-list-arrow">→</div>
+    </div>`).join('');
+
   inner.innerHTML = `
     <div class="hexaflex-wrap">
       <div class="hexaflex-header">
@@ -768,6 +815,7 @@ function renderHexaflex() {
         </div>
         ${nodeDivs}
       </div>
+      <div class="hf-mobile-list">${mobileList}</div>
     </div>`;
 }
 
@@ -881,7 +929,7 @@ function addMessage(role, text) {
     ? `<div class="msg-label">${esc(labels[role])}</div><div class="msg-bubble">${esc(text)}</div>`
     : `<div class="msg-bubble">${esc(text)}</div>`;
   c.appendChild(div);
-  c.scrollTop = c.scrollHeight;
+  requestAnimationFrame(() => { div.scrollIntoView({ block: 'end' }); });
 }
 
 async function requestSupervisorFeedback() {
@@ -903,11 +951,11 @@ function renderSupervisorFeedback(fb) {
     .map(([l, s]) => `<div class="process-item"><div class="process-label">${l} (${s||0}/10)</div><div class="process-bar-bg"><div class="process-bar" style="width:${(s||0)*10}%"></div></div></div>`).join('');
   document.getElementById('supervisor-body').innerHTML = `
     <div class="feedback-section info"><div class="feedback-section-title">ACT Süreç Kullanımı</div><div class="act-processes">${pHTML}</div></div>
-    ${fb.guclu_yanlar?.length ? `<div class="feedback-section good"><div class="feedback-section-title">✓ Güçlü Yanlar</div><ul class="feedback-list">${fb.guclu_yanlar.map(i=>`<li>${i}</li>`).join('')}</ul></div>` : ''}
-    ${fb.act_firsatlari?.length ? `<div class="feedback-section warn"><div class="feedback-section-title">△ Kaçırılan Fırsatlar</div><ul class="feedback-list">${fb.act_firsatlari.map(i=>`<li>${i}</li>`).join('')}</ul></div>` : ''}
-    ${fb.hatalar?.length ? `<div class="feedback-section bad"><div class="feedback-section-title">✕ Hatalar</div><ul class="feedback-list">${fb.hatalar.map(i=>`<li>${i}</li>`).join('')}</ul></div>` : ''}
-    ${fb.somut_oneri ? `<div class="feedback-section info"><div class="feedback-section-title">→ Somut Öneri</div><div class="feedback-text">${fb.somut_oneri}</div></div>` : ''}
-    ${fb.genel_yorum ? `<div class="feedback-section"><div class="feedback-section-title">Genel Değerlendirme</div><div class="feedback-text">${fb.genel_yorum}</div></div>` : ''}
+    ${fb.guclu_yanlar?.length ? `<div class="feedback-section good"><div class="feedback-section-title">✓ Güçlü Yanlar</div><ul class="feedback-list">${fb.guclu_yanlar.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>` : ''}
+    ${fb.act_firsatlari?.length ? `<div class="feedback-section warn"><div class="feedback-section-title">△ Kaçırılan Fırsatlar</div><ul class="feedback-list">${fb.act_firsatlari.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>` : ''}
+    ${fb.hatalar?.length ? `<div class="feedback-section bad"><div class="feedback-section-title">✕ Hatalar</div><ul class="feedback-list">${fb.hatalar.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>` : ''}
+    ${fb.somut_oneri ? `<div class="feedback-section info"><div class="feedback-section-title">→ Somut Öneri</div><div class="feedback-text">${esc(fb.somut_oneri)}</div></div>` : ''}
+    ${fb.genel_yorum ? `<div class="feedback-section"><div class="feedback-section-title">Genel Değerlendirme</div><div class="feedback-text">${esc(fb.genel_yorum)}</div></div>` : ''}
   `;
 }
 
@@ -925,14 +973,14 @@ async function loadAcademy(key, name) {
     inner.innerHTML = `
       <div class="academy-content">
         <div class="back-link" onclick="renderHexaflex()">← ACT Hexaflex</div>
-        <div style="font-family:var(--display);font-size:22px;color:var(--accent);margin-bottom:6px;">${d.baslik || name}</div>
+        <div style="font-family:var(--display);font-size:22px;color:var(--accent);margin-bottom:6px;">${esc(d.baslik || name)}</div>
         <div style="margin-bottom:20px;height:1px;background:var(--border);"></div>
-        <div class="academy-section"><div class="academy-section-title">Basit Açıklama</div><div class="academy-section-content">${d.basit_aciklama}</div></div>
-        <div class="academy-section"><div class="academy-section-title">Klinik Açıklama</div><div class="academy-section-content">${d.klinik_aciklama}</div></div>
-        <div class="academy-section"><div class="academy-section-title">ACT vs CBT Farkı</div><div class="academy-section-content">${d.act_cbt_farki}</div></div>
-        ${d.terapist_hatalari?.length ? `<div class="academy-section" style="border-left:3px solid var(--danger);"><div class="academy-section-title">Sık Yapılan Hatalar</div><ul style="list-style:none;display:flex;flex-direction:column;gap:6px;">${d.terapist_hatalari.map(h=>`<li style="font-size:13px;color:var(--text2);padding-left:14px;border-left:2px solid var(--border2);">${h}</li>`).join('')}</ul></div>` : ''}
-        ${d.mini_egzersiz ? `<div class="academy-section" style="border-left:3px solid var(--accent2);"><div class="academy-section-title">Mini Egzersiz — ${d.mini_egzersiz.sure||''}</div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;">${d.mini_egzersiz.baslik}</div><div class="academy-section-content">${d.mini_egzersiz.talimat}</div></div>` : ''}
-        ${d.kisa_vaka ? `<div class="academy-section" style="border-left:3px solid var(--accent);"><div class="academy-section-title">Kısa Vaka</div><div style="display:flex;flex-direction:column;gap:8px;"><div><span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;">Danışan</span><br><span style="font-size:13px;color:var(--text2);">${d.kisa_vaka.danisan} — ${d.kisa_vaka.sorun}</span></div><div><span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;">Müdahale</span><br><span style="font-size:13px;color:var(--text2);font-style:italic;">"${d.kisa_vaka.mudahale}"</span></div><div><span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;">Sonuç</span><br><span style="font-size:13px;color:var(--text2);">${d.kisa_vaka.sonuc}</span></div></div></div>` : ''}
+        <div class="academy-section"><div class="academy-section-title">Basit Açıklama</div><div class="academy-section-content">${esc(d.basit_aciklama)}</div></div>
+        <div class="academy-section"><div class="academy-section-title">Klinik Açıklama</div><div class="academy-section-content">${esc(d.klinik_aciklama)}</div></div>
+        <div class="academy-section"><div class="academy-section-title">ACT vs CBT Farkı</div><div class="academy-section-content">${esc(d.act_cbt_farki)}</div></div>
+        ${d.terapist_hatalari?.length ? `<div class="academy-section" style="border-left:3px solid var(--danger);"><div class="academy-section-title">Sık Yapılan Hatalar</div><ul style="list-style:none;display:flex;flex-direction:column;gap:6px;">${d.terapist_hatalari.map(h=>`<li style="font-size:13px;color:var(--text2);padding-left:14px;border-left:2px solid var(--border2);">${esc(h)}</li>`).join('')}</ul></div>` : ''}
+        ${d.mini_egzersiz ? `<div class="academy-section" style="border-left:3px solid var(--accent2);"><div class="academy-section-title">Mini Egzersiz — ${esc(d.mini_egzersiz.sure||'')}</div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;">${esc(d.mini_egzersiz.baslik)}</div><div class="academy-section-content">${esc(d.mini_egzersiz.talimat)}</div></div>` : ''}
+        ${d.kisa_vaka ? `<div class="academy-section" style="border-left:3px solid var(--accent);"><div class="academy-section-title">Kısa Vaka</div><div style="display:flex;flex-direction:column;gap:8px;"><div><span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;">Danışan</span><br><span style="font-size:13px;color:var(--text2);">${esc(d.kisa_vaka.danisan)} — ${esc(d.kisa_vaka.sorun)}</span></div><div><span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;">Müdahale</span><br><span style="font-size:13px;color:var(--text2);font-style:italic;">"${esc(d.kisa_vaka.mudahale)}"</span></div><div><span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;">Sonuç</span><br><span style="font-size:13px;color:var(--text2);">${esc(d.kisa_vaka.sonuc)}</span></div></div></div>` : ''}
       </div>`;
   } catch (e) {
     inner.innerHTML = `<div style="padding:28px;color:var(--danger);">Hata: ${esc(e.message)}</div>`;
@@ -1082,12 +1130,12 @@ async function loadMetaphor() {
     const fb = JSON.parse(data.guidance.replace(/```json|```/g, '').trim());
     result.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:12px;">
-        <div class="feedback-section info"><div class="feedback-section-title">Metafor Açıklaması</div><div class="feedback-text">${fb.metafor_aciklamasi}</div></div>
-        <div class="feedback-section good"><div class="feedback-section-title">Ne Zaman Kullanılır</div><div class="feedback-text">${fb.ne_zaman_kullanilir}</div></div>
-        <div class="feedback-section bad"><div class="feedback-section-title">Ne Zaman Kullanılmaz</div><div class="feedback-text">${fb.ne_zaman_kullanilmaz}</div></div>
-        <div class="feedback-section warn"><div class="feedback-section-title">Senin Senaryonu</div><div class="feedback-text">${fb.kullanici_senaryosu_analizi}</div></div>
-        <div class="feedback-section" style="border-left:3px solid var(--accent);"><div class="feedback-section-title">→ Örnek Kullanım</div><div class="feedback-text" style="font-style:italic;">"${fb.ornek_kullanim}"</div></div>
-        ${fb.alternatif_metaforlar?.length ? `<div class="feedback-section"><div class="feedback-section-title">Alternatif Metaforlar</div><ul class="feedback-list">${fb.alternatif_metaforlar.map(m=>`<li>${m}</li>`).join('')}</ul></div>` : ''}
+        <div class="feedback-section info"><div class="feedback-section-title">Metafor Açıklaması</div><div class="feedback-text">${esc(fb.metafor_aciklamasi)}</div></div>
+        <div class="feedback-section good"><div class="feedback-section-title">Ne Zaman Kullanılır</div><div class="feedback-text">${esc(fb.ne_zaman_kullanilir)}</div></div>
+        <div class="feedback-section bad"><div class="feedback-section-title">Ne Zaman Kullanılmaz</div><div class="feedback-text">${esc(fb.ne_zaman_kullanilmaz)}</div></div>
+        <div class="feedback-section warn"><div class="feedback-section-title">Senin Senaryonu</div><div class="feedback-text">${esc(fb.kullanici_senaryosu_analizi)}</div></div>
+        <div class="feedback-section" style="border-left:3px solid var(--accent);"><div class="feedback-section-title">→ Örnek Kullanım</div><div class="feedback-text" style="font-style:italic;">"${esc(fb.ornek_kullanim)}"</div></div>
+        ${fb.alternatif_metaforlar?.length ? `<div class="feedback-section"><div class="feedback-section-title">Alternatif Metaforlar</div><ul class="feedback-list">${fb.alternatif_metaforlar.map(m=>`<li>${esc(m)}</li>`).join('')}</ul></div>` : ''}
       </div>`;
   } catch (e) {
     result.innerHTML = `<div style="color:var(--danger);">Hata: ${esc(e.message)}</div>`;
@@ -1119,11 +1167,11 @@ async function submitCase() {
     const fb = JSON.parse(data.feedback.replace(/```json|```/g, '').trim());
     result.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:12px;">
-        <div class="feedback-section info"><div class="feedback-section-title">Genel Değerlendirme</div><div class="feedback-text">${fb.genel_degerlendirme}</div></div>
-        ${fb.guclu_yanlar?.length ? `<div class="feedback-section good"><div class="feedback-section-title">✓ Güçlü Yanlar</div><ul class="feedback-list">${fb.guclu_yanlar.map(i=>`<li>${i}</li>`).join('')}</ul></div>` : ''}
-        ${fb.eksikler?.length ? `<div class="feedback-section bad"><div class="feedback-section-title">✕ Eksikler</div><ul class="feedback-list">${fb.eksikler.map(i=>`<li>${i}</li>`).join('')}</ul></div>` : ''}
-        ${fb.gelistirilmis_formülasyon ? `<div class="feedback-section" style="border-left:3px solid var(--accent);"><div class="feedback-section-title">Geliştirilmiş Formülasyon</div><div style="display:flex;flex-direction:column;gap:6px;">${Object.entries(fb.gelistirilmis_formülasyon).map(([k,v])=>`<div><span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;">${k}:</span><br><span style="font-size:13px;color:var(--text2);">${v}</span></div>`).join('')}</div></div>` : ''}
-        ${fb.sonraki_adim ? `<div class="feedback-section warn"><div class="feedback-section-title">→ Sonraki Adım</div><div class="feedback-text">${fb.sonraki_adim}</div></div>` : ''}
+        <div class="feedback-section info"><div class="feedback-section-title">Genel Değerlendirme</div><div class="feedback-text">${esc(fb.genel_degerlendirme)}</div></div>
+        ${fb.guclu_yanlar?.length ? `<div class="feedback-section good"><div class="feedback-section-title">✓ Güçlü Yanlar</div><ul class="feedback-list">${fb.guclu_yanlar.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>` : ''}
+        ${fb.eksikler?.length ? `<div class="feedback-section bad"><div class="feedback-section-title">✕ Eksikler</div><ul class="feedback-list">${fb.eksikler.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>` : ''}
+        ${fb.gelistirilmis_formülasyon ? `<div class="feedback-section" style="border-left:3px solid var(--accent);"><div class="feedback-section-title">Geliştirilmiş Formülasyon</div><div style="display:flex;flex-direction:column;gap:6px;">${Object.entries(fb.gelistirilmis_formülasyon).map(([k,v])=>`<div><span style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;">${esc(k)}:</span><br><span style="font-size:13px;color:var(--text2);">${esc(v)}</span></div>`).join('')}</div></div>` : ''}
+        ${fb.sonraki_adim ? `<div class="feedback-section warn"><div class="feedback-section-title">→ Sonraki Adım</div><div class="feedback-text">${esc(fb.sonraki_adim)}</div></div>` : ''}
       </div>`;
   } catch (e) {
     result.innerHTML = `<div style="color:var(--danger);">Hata: ${esc(e.message)}</div>`;
@@ -1148,6 +1196,17 @@ function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(e
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
+
+// iOS klavye açılınca input-area kaybolmasın
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    const inputArea = document.querySelector('.input-area');
+    const difficultInput = document.querySelector('.difficult-input-area');
+    const offset = window.innerHeight - window.visualViewport.height;
+    if (inputArea) inputArea.style.transform = `translateY(-${offset}px)`;
+    if (difficultInput) difficultInput.style.transform = `translateY(-${offset}px)`;
+  });
+}
 
 // Başlangıç
 renderAuthState();
