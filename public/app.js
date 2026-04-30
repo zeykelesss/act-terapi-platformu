@@ -20,13 +20,32 @@ function esc(str) {
 // ── AUTH ───────────────────────────────────────────────────────────────────
 const FREE_MODULES = ['home', 'academy', 'metaphor'];
 const SIM_LIMIT = 3;
+const TOKEN_KEY = 'actlab_token';
 
-function getUser() { try { return JSON.parse(localStorage.getItem('actlab_user')); } catch { return null; } }
-function saveUser(u) { localStorage.setItem('actlab_user', JSON.stringify(u)); }
+let currentUser = null;
+
+function getToken() { return localStorage.getItem(TOKEN_KEY); }
+function setToken(t) { localStorage.setItem(TOKEN_KEY, t); }
+function clearToken() { localStorage.removeItem(TOKEN_KEY); }
+
+function getUser() { return currentUser; }
 function getSimCount() { return parseInt(localStorage.getItem('actlab_simcount') || '0'); }
 function incSimCount() { localStorage.setItem('actlab_simcount', String(getSimCount() + 1)); }
-function isPremium() { const u = getUser(); return u && u.plan === 'premium'; }
-function canAccess(name) { const u = getUser(); if (!u) return false; if (isPremium()) return true; return FREE_MODULES.includes(name); }
+function isPremium() { return currentUser?.plan === 'premium'; }
+function canAccess(name) { if (!currentUser) return false; if (isPremium()) return true; return FREE_MODULES.includes(name); }
+
+async function loadCurrentUser() {
+  const token = getToken();
+  if (!token) { currentUser = null; return; }
+  try {
+    const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { clearToken(); currentUser = null; return; }
+    const data = await res.json();
+    currentUser = data.user;
+  } catch {
+    currentUser = null;
+  }
+}
 
 function openLogin()    { document.getElementById('login-modal').classList.add('open'); }
 function closeLogin()   { document.getElementById('login-modal').classList.remove('open'); }
@@ -41,36 +60,70 @@ function selectPlan(plan) {
   document.getElementById('selected-plan').value = plan;
 }
 
-function doLogin(e) {
+async function doLogin(e) {
   e.preventDefault();
   const email = document.getElementById('login-email').value.trim();
   const pw    = document.getElementById('login-password').value;
-  const users = JSON.parse(localStorage.getItem('actlab_users') || '[]');
-  const found = users.find(u => u.email === email && u.pw === pw);
-  if (!found) { document.getElementById('login-error').style.display = 'block'; return; }
-  document.getElementById('login-error').style.display = 'none';
-  saveUser(found);
-  closeLogin();
-  renderAuthState();
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pw }),
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.error || 'Giriş başarısız'; errEl.style.display = 'block'; return; }
+    setToken(data.token);
+    currentUser = data.user;
+    closeLogin();
+    renderAuthState();
+  } catch (err) {
+    errEl.textContent = 'Bağlantı hatası. Tekrar dene.';
+    errEl.style.display = 'block';
+  }
 }
 
-function doRegister(e) {
+async function doRegister(e) {
   e.preventDefault();
   const name  = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
   const pw    = document.getElementById('reg-password').value;
-  const plan  = document.getElementById('selected-plan').value;
-  const user  = { name, email, pw, plan };
-  const users = JSON.parse(localStorage.getItem('actlab_users') || '[]');
-  users.push(user);
-  localStorage.setItem('actlab_users', JSON.stringify(users));
-  saveUser(user);
-  closeRegister();
-  renderAuthState();
+  const errEl = document.getElementById('register-error');
+  if (errEl) errEl.style.display = 'none';
+
+  if (pw.length < 8) {
+    if (errEl) { errEl.textContent = 'Şifre en az 8 karakter olmalı'; errEl.style.display = 'block'; }
+    else alert('Şifre en az 8 karakter olmalı');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pw, name }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const msg = data.error || 'Kayıt başarısız';
+      if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } else alert(msg);
+      return;
+    }
+    setToken(data.token);
+    currentUser = data.user;
+    closeRegister();
+    renderAuthState();
+  } catch (err) {
+    const msg = 'Bağlantı hatası. Tekrar dene.';
+    if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } else alert(msg);
+  }
 }
 
 function logout() {
-  localStorage.removeItem('actlab_user');
+  clearToken();
+  currentUser = null;
   renderAuthState();
   showView('home');
 }
@@ -525,13 +578,25 @@ function openMetaphorDetail(id) {
 
 // ── API CALL (backend'e istek atar) ───────────────────────────────────────
 async function api(endpoint, body) {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   const res = await fetch(`/api/${endpoint}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(body),
   });
+  if (res.status === 401) {
+    clearToken();
+    currentUser = null;
+    renderAuthState();
+    openLogin();
+    throw new Error('Oturum süresi doldu, lütfen tekrar giriş yap');
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    if (err.upgrade) { openUpgrade(); throw new Error(err.error || 'Premium gerekli'); }
     throw new Error(err.error || `HTTP ${res.status}`);
   }
   return res.json();
@@ -1208,5 +1273,8 @@ if (window.visualViewport) {
   });
 }
 
-// Başlangıç
-renderAuthState();
+// Başlangıç — token varsa kullanıcıyı backend'den çek, sonra UI'ı render et
+(async () => {
+  await loadCurrentUser();
+  renderAuthState();
+})();
