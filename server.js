@@ -8,6 +8,9 @@ import { fileURLToPath } from "url";
 import Groq from "groq-sdk";
 import { PROMPTS } from "./prompts.js";
 import { supabaseAdmin, supabasePublic, requireAuth, requirePremium } from "./auth.js";
+import { PROFILES } from "./data/profiles.js";
+import { SCENARIOS } from "./data/scenarios.js";
+import { METAPHORS } from "./data/metaphors.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -53,6 +56,19 @@ function groq() {
   }
   return _groq;
 }
+
+// ── STATIC DATA (public, cache'lenir) ───────────────────────────────────────
+
+function staticDataHandler(payload) {
+  return (req, res) => {
+    res.set("Cache-Control", "public, max-age=300");
+    res.json(payload);
+  };
+}
+
+app.get("/api/profiles", staticDataHandler({ profiles: PROFILES }));
+app.get("/api/scenarios", staticDataHandler({ scenarios: SCENARIOS }));
+app.get("/api/metaphors", staticDataHandler({ metaphors: METAPHORS }));
 
 // ── AUTH ROUTES ─────────────────────────────────────────────────────────────
 
@@ -175,6 +191,97 @@ app.post("/api/supervisor", requireAuth, async (req, res) => {
     console.error(e);
     res.status(500).json({ error: e.message });
   }
+});
+
+// ── SESSIONS / PROGRESS ─────────────────────────────────────────────────────
+
+const VALID_MODULES = ["simulation", "difficult_moment", "case_formulation", "metaphor_lab"];
+
+// POST /api/sessions/save — seans bitince transkript + feedback'i kaydet
+app.post("/api/sessions/save", requireAuth, async (req, res) => {
+  const { module, profile_id, messages, supervisor_feedback, score } = req.body || {};
+  if (!VALID_MODULES.includes(module)) {
+    return res.status(400).json({ error: "Geçersiz module" });
+  }
+  if (score != null && (typeof score !== "number" || score < 0 || score > 100)) {
+    return res.status(400).json({ error: "Score 0-100 arası olmalı" });
+  }
+
+  const { data: inserted, error } = await supabaseAdmin
+    .from("sessions")
+    .insert({
+      user_id: req.user.id,
+      module,
+      profile_id: profile_id || null,
+      messages_json: messages || null,
+      supervisor_feedback: supervisor_feedback || null,
+      score: score ?? null,
+    })
+    .select("id, created_at")
+    .single();
+  if (error) return res.status(500).json({ error: error.message });
+
+  // Progress upsert (incremental avg)
+  const { data: existing } = await supabaseAdmin
+    .from("progress")
+    .select("total_sessions, avg_score")
+    .eq("user_id", req.user.id)
+    .eq("module", module)
+    .maybeSingle();
+
+  const prevTotal = existing?.total_sessions || 0;
+  const prevAvg = existing?.avg_score ? parseFloat(existing.avg_score) : null;
+  const newTotal = prevTotal + 1;
+  let newAvg = prevAvg;
+  if (score != null) {
+    newAvg = prevAvg == null ? score : (prevAvg * prevTotal + score) / newTotal;
+  }
+
+  await supabaseAdmin.from("progress").upsert({
+    user_id: req.user.id,
+    module,
+    total_sessions: newTotal,
+    avg_score: newAvg != null ? Number(newAvg.toFixed(2)) : null,
+    last_session_at: new Date().toISOString(),
+  }, { onConflict: "user_id,module" });
+
+  res.json({ id: inserted.id, created_at: inserted.created_at });
+});
+
+// GET /api/sessions — kullanıcının seans geçmişi
+app.get("/api/sessions", requireAuth, async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+  const { data, error } = await supabaseAdmin
+    .from("sessions")
+    .select("id, module, profile_id, supervisor_feedback, score, created_at")
+    .eq("user_id", req.user.id)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ sessions: data });
+});
+
+// GET /api/sessions/:id — tek seansın detayı (transcript dahil)
+app.get("/api/sessions/:id", requireAuth, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from("sessions")
+    .select("*")
+    .eq("id", req.params.id)
+    .eq("user_id", req.user.id)
+    .maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(404).json({ error: "Seans bulunamadı" });
+  res.json({ session: data });
+});
+
+// GET /api/progress — modül bazlı yetkinlik puanları
+app.get("/api/progress", requireAuth, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from("progress")
+    .select("module, total_sessions, avg_score, last_session_at")
+    .eq("user_id", req.user.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ progress: data });
 });
 
 // POST /api/academy — ACT Akademi içeriği (free)

@@ -47,6 +47,19 @@ async function loadCurrentUser() {
   }
 }
 
+async function loadStaticData() {
+  const [pRes, sRes, mRes] = await Promise.all([
+    fetch('/api/profiles'),
+    fetch('/api/scenarios'),
+    fetch('/api/metaphors'),
+  ]);
+  if (!pRes.ok || !sRes.ok || !mRes.ok) throw new Error('Statik veri yüklenemedi');
+  const [pData, sData, mData] = await Promise.all([pRes.json(), sRes.json(), mRes.json()]);
+  PROFILES = pData.profiles;
+  SCENARIOS = sData.scenarios;
+  METAPHOR_DATA = mData.metaphors;
+}
+
 function openLogin()    { document.getElementById('login-modal').classList.add('open'); }
 function closeLogin()   { document.getElementById('login-modal').classList.remove('open'); }
 function openRegister() { document.getElementById('register-modal').classList.add('open'); }
@@ -158,273 +171,8 @@ function renderAuthState() {
 // ── STATE ──────────────────────────────────────────────────────────────────
 const state = { currentProfile: null, messages: [], totalTherapistMsgs: 0 };
 
-// ── METAFOR VERİTABANI — Russ Harris, ACT Made Simple ─────────────────────
-const METAPHOR_DATA = [
-  {
-    id: 'passengers-on-bus',
-    name: 'Otobüsteki Yolcular',
-    process: 'Kabul & Değerler',
-    processTag: 'Committed Action',
-    hook: 'Yolcular bağırıyor. Ama otobüsü kim sürüyor?',
-    insight: 'Düşünceler ve duygular seni kontrol ediyor gibi görünse de, yönü seçen sensin. Yolcuları susturmak zorunda değilsin — sadece sürmaya devam et.',
-    act_processes: ['Committed Action', 'Değerler', 'Kabul', 'Cognitive Fusion'],
-    when_to_use: [
-      '"Kaygım izin vermedi" veya "Aklım bırakmadı" diyen danışanlar için',
-      'Düşüncelerinin kendisini engellediğini hisseden biri için',
-      'Değer yönlü hareketi başlatmak istediğinde',
-      'Fusion ile committed action arasındaki bağı kurmak için',
-    ],
-    misunderstandings: [
-      { problem: '"Yolcuları nasıl susturabilirim?"', fix: 'Susturman gerekmiyor. Hedef yolcuları kontrol etmek değil, yönü seçmek. Yolcular gürültü yaparken bile sürebilirsin.' },
-      { problem: 'Danışan defusion kavramını hiç tanımıyorsa metafor soyut kalır.', fix: 'Önce kısa bir defusion egzersizi yap. Sonra bu metaforu kullan — o düşünce, otobüsünde bir yolcuydu bağlantısını kur.' },
-    ],
-    clinical_goal: 'Danışan, düşünceler ve duygular varlığında bile harekete geçebileceğini fark eder. "Kaygım olsa da seçebilirim" algısı yerleşir.',
-    session_language: '"Şöyle düşün — sen bir otobüs sürücüsüsün. Yolcuların var; bazıları çok gürültücü. Buraya gitme, Başaramazsın diye bağırıyorlar. Sen ne yaparsın? Onları susturmak için durup tartışabilirsin — ama otobüs durur. Ya da sürmaya devam edersin — yolcular gürültü yaparken bile. Değerlerin doğrultusunda."',
-    practice_bridge: 'Değerleri olan ama hareketsiz kalan bir danışanda dene.',
-  },
-  {
-    id: 'quicksand',
-    name: 'Bataklık',
-    process: 'Kabul',
-    processTag: 'Acceptance',
-    hook: 'Bataklıkta ne kadar çırpınırsan, o kadar batarsın.',
-    insight: 'Duygularla savaşmak onları büyütür. Kabul, teslim olmak değil — savaşı bırakmaktır. Bataklıkta uzanmak aktif bir harekettir.',
-    act_processes: ['Kabul', 'Experiential Avoidance', 'Creative Hopelessness'],
-    when_to_use: [
-      'Danışan duygularından kaçınarak daha çok sıkışıyorsa',
-      '"Kaygım gitmiyor, ne yapsam olmuyor" diyorsa',
-      'Kontrol stratejilerinin işe yaramadığını göstermek istiyorsan',
-      'Kaygıyla aktif olarak savaşan biri için',
-    ],
-    misunderstandings: [
-      { problem: '"Peki ne yapayım, sadece oturup kabul mü edeyim?"', fix: 'Kabul etmek pasif değil. Bataklıkta uzanmak aktif bir harekettir — ve hayatta kalmanı sağlar. Teslim olmak değil, strateji değiştirmek.' },
-      { problem: 'Aktif kriz veya kendine zarar verme durumunda kullanılırsa', fix: 'Kendine zarar verme dürtüsünü kabul et şeklinde yanlış anlaşılabilir. Bu bağlamda kullanma — önce güvenlik.' },
-    ],
-    clinical_goal: 'Danışan, duygularla savaşmak yerine onlarla birlikte var olmayı dener. "Kabul etmek beni zayıf yapmıyor" algısı gelişir.',
-    session_language: '"Bataklığa düştüğünü düşün. İçgüdün ne der? Çırpın, çık. Ama bataklıkta olan ne? Ne kadar çırpınırsan o kadar batarsın. Kaygınla olan da biraz böyle. Ne kadar savaşırsın, ne kadar gitsin dersen — o kadar büyüyor. Ya uzansan? Teslim olmak değil — savaşı bırakmak."',
-    practice_bridge: 'Bu metaforu kaygısını kontrol etmeye çalışan bir danışanda dene.',
-  },
-  {
-    id: 'leaves-on-stream',
-    name: 'Deredeki Yapraklar',
-    process: 'Bilişsel Ayrışma',
-    processTag: 'Cognitive Defusion',
-    hook: 'Düşüncelerini durdurmana gerek yok. Sadece izle.',
-    insight: 'Defusion, düşünceleri yok etmek değil — onlarla ilişkini değiştirmektir. Yaprak akabilir; sen kıyıda kalırsın.',
-    act_processes: ['Cognitive Defusion', 'Mindfulness', 'Şimdiki Ana Temas'],
-    when_to_use: [
-      'Obsesif ya da ruminatif düşünceler için',
-      'Bir düşünceden bir türlü kopamayan danışanlar için',
-      "Defusion'ı experiential olarak öğretmek istediğinde",
-      'Egzersiz yaptırmak istediğinde — hem psikoeğitim hem uygulama',
-    ],
-    misunderstandings: [
-      { problem: '"Düşünceler durmadı ki"', fix: 'Durmasını istemiyoruz. Düşünceleri durdurmak hedef değil — onları izlemek. Yaprakların durması gerekmez, sen kıyıda oturuyorsun.' },
-      { problem: 'Görselleştirme yapmakta zorlanan danışanlar için işe yaramayabilir.', fix: 'Eller egzersizine ya da işitsel bir defusion tekniğine geç. Görsel değilse somut nesne bazlı dene.' },
-    ],
-    clinical_goal: 'Danışan düşüncelerden kopuk olmadan ama onlara kapılmadan var olabilir. "Düşüncem var ama o ben değilim" deneyimi yerleşir.',
-    session_language: '"Şimdi seninle kısa bir egzersiz yapmak istiyorum. Gözlerini kapayabilirsin. Önünde sakin bir dere hayal et. Sular yavaşça akıyor. Şimdi aklına gelen her düşünceyi — hangi düşünce olursa olsun — bir yaprağa koy ve derede bırak. Yaprak akıp gidiyor. Sen kıyıda oturuyorsun, izliyorsun. Düşünceni tutmaya çalışma, durdurma da. Sadece izle."',
-    practice_bridge: 'Bu metaforu ruminasyona takılan bir danışanda dene.',
-  },
-  {
-    id: 'chessboard',
-    name: 'Satranç Tahtası',
-    process: 'Bağlam Olarak Benlik',
-    processTag: 'Self-as-Context',
-    hook: 'Sen taşlardan biri değilsin. Sen tahtasın.',
-    insight: 'Düşünceler ve duygular gelip gider — onları izleyen sen sabitsın, zedelenemiyor. Gözlemleyen benlik soyut değil, yaşanabilir bir deneyimdir.',
-    act_processes: ['Self-as-Context', 'Gözlemleyen Benlik', 'Cognitive Defusion'],
-    when_to_use: [
-      'Kimlik krizi yaşayan danışanlar için',
-      '"Ben kimim?" sorusunda takılan biri için',
-      '"Ben yetersizim" gibi düşüncelerle tam özdeşleşme varsa',
-      'Self-as-context kavramını somutlaştırmak istediğinde',
-    ],
-    misunderstandings: [
-      { problem: '"Ben bir tahta değilim"', fix: 'Evet, bu bir benzetme. Soruyu somutlaştır: Düşüncelerin değişiyor mu? Duyguların değişiyor mu? Peki onları izleyen bir şey var mı? — o izleyen, tahtadır.' },
-      { problem: 'İlk seanslarda çok soyut gelebilir.', fix: 'Önce basit bir gözlemleyen benlik egzersizi yap. Sonra satranç tahtasını açıklama olarak kullan, başlangıç noktası olarak değil.' },
-    ],
-    clinical_goal: 'Danışan, düşünce ve duygularının kendisinin tamamı olmadığını fark eder. "Ben bu düşünce değilim, ben onu gözlemleyenim" bakış açısı yerleşir.',
-    session_language: '"Şöyle bir şey düşün. Satranç tahtasında taşlar savaşıyor — bazıları siyah, bazıları beyaz. Bu taşlar senin düşüncelerin ve duyguların. Peki sen kimsin? Bir taş mısın? Hayır — sen tahtasın. Taşlar gelir geçer, savaşır. Ama tahta hep orada. Zedelenmiyor, kaybolmuyor. İşte bu gözlemleyen benlik dediğimiz şey."',
-    practice_bridge: 'Kendini tamamen düşünceleriyle tanımlayan bir danışanda dene.',
-  },
-  {
-    id: 'sky-weather',
-    name: 'Gökyüzü ve Hava',
-    process: 'Bağlam Olarak Benlik',
-    processTag: 'Self-as-Context',
-    hook: 'Fırtına, gökyüzü değildir.',
-    insight: 'Sen duygularının toplamı değilsin. Duygular sende geçer — sen kalırsın. Fırtına gerçektir, ama gökyüzü fırtınaya dönüşmez.',
-    act_processes: ['Self-as-Context', 'Kabul', 'Mindfulness'],
-    when_to_use: [
-      'Danışan yoğun bir duyguyla tam özdeşleşiyorsa',
-      '"Ben depresyonum" değil "ben depresyonluyum" ayrımı için',
-      '"Bu his bitmeyecek" inancını ele almak istediğinde',
-      'Satranç tahtasına alternatif, daha şiirsel bir seçenek olarak',
-    ],
-    misunderstandings: [
-      { problem: '"Fırtına geçecek diyorsunuz ama geçmiyor"', fix: 'Fırtınanın geçeceğini söylemiyoruz. Gökyüzünün fırtınaya dönüşmediğini söylüyoruz. Sen duygu değil, duygunun geçtiği yersin.' },
-      { problem: 'Disosiyasyon eğilimi olan danışanlar için dikkatli kullan.', fix: 'Metafor kendinden kopma hissini artırabilir. Bu durumda beden temelli bir mindfulness tekniğine geç.' },
-    ],
-    clinical_goal: 'Danışan, duygularla özdeşleşmeden onlara alan açabilir. "Bu his bende, ama bu his ben değilim" farkı yerleşir.',
-    session_language: '"Bazen duygular o kadar yoğun oluyor ki sen duyguymuşsun gibi hissediyorsun. Ben kaygılıyım değil, ben kaygıyım. Şöyle düşün: sen gökyüzüsün. Bu anki duygu — kaygı, öfke, üzüntü — bir hava durumu. Fırtına gerçek, yoğun. Ama geçici. Gökyüzü hiçbir zaman fırtınaya dönüşmüyor."',
-    practice_bridge: 'Duygusal yoğunlukta kendini kaybeden bir danışanda dene.',
-  },
-  {
-    id: 'tug-of-war',
-    name: 'Halat Çekme',
-    process: 'Kabul',
-    processTag: 'Acceptance',
-    hook: 'Kazanamayacağın bir savaşı bırakmak, pes etmek değildir.',
-    insight: 'Duygularla savaş onları güçlendirir. İpi bırakmak, enerjiyi serbest bırakır — canavar hâlâ orada, ama artık seni çekemiyor.',
-    act_processes: ['Kabul', 'Experiential Avoidance', 'Creative Hopelessness'],
-    when_to_use: [
-      '"Duygularımla sürekli savaşıyorum" diyen danışanlar için',
-      "Experiential avoidance'ı somutlaştırmak için",
-      'Kontrolün neden işe yaramadığını göstermek istediğinde',
-      'Creative hopelessness çalışmasında',
-    ],
-    misunderstandings: [
-      { problem: '"İpi bırakmak teslim olmak değil mi?"', fix: 'Tam tersi. İpi bırakmak için cesaret lazım. Teslim olmak savaşa devam etmek — kazanamayacağın bir savaşa. İpi bırakmak seçim, teslim olmak değil.' },
-      { problem: '"Peki canavar ne yapar o zaman?"', fix: 'Orada olmaya devam eder. Ama artık seni çekemiyor. Enerji serbest kalıyor — hayatın için kullanılabilir hale geliyor.' },
-    ],
-    clinical_goal: 'Danışan, duygularla savaşmayı bırakmanın ne anlama geldiğini hisseder. Kabul, pes etmek değil aktif bir seçimdir.',
-    session_language: '"Şöyle bir sahne hayal et. Karşında dev bir canavar var — kaygın diyelim. Elinizde halat var. Çekiyorsunuz, o çekiyor. İkiniz de yoruldunuz ama bırakmıyorsunuz. Ve aranda derin bir uçurum var. Ne yaparsın? Daha sert çekersen? Daha yorulursun. Peki ya ipi bıraksan? Canavar oradadır. Ama artık seni çekemiyor. Enerji serbest kalıyor."',
-    practice_bridge: 'Kaygısını kontrol etmeye çalışarak tükenen bir danışanda dene.',
-  },
-  {
-    id: 'compass',
-    name: 'Pusula',
-    process: 'Değerler',
-    processTag: 'Values',
-    hook: 'Kuzeye ulaşamazsın. Ama o yönde yürüyebilirsin.',
-    insight: 'Değerler, varılacak hedefler değil — seçilen yönlerdir. Asla tamamlanmaz. Bu fark, danışanın değerlerle ilişkisini kökten değiştirir.',
-    act_processes: ['Değerler', 'Committed Action'],
-    when_to_use: [
-      'Değerler ile hedefleri karıştıran danışanlar için',
-      '"Değerlerime ulaşamıyorum" diyen biri için',
-      'Değerlere dayalı hareketi netleştirmek istediğinde',
-      'Değer clarification sonrasında pekiştirme olarak',
-    ],
-    misunderstandings: [
-      { problem: '"Değerlerime göre yaşayamıyorum ki"', fix: 'Mükemmel yürümek zorunda değilsin. Pusula yönü gösterir — saptın, tamam. Şimdi tekrar o yöne dön. Sapmak başarısızlık değil.' },
-      { problem: 'Danışan değerlerini henüz netleştirememişse bu metafor boşta kalır.', fix: 'Önce değer clarification çalışması yap. Bu metaforu açıklama değil, pekiştirme olarak kullan.' },
-    ],
-    clinical_goal: 'Danışan, değerlerin başarılacak bir şey olmadığını fark eder. "Yönümü biliyorum" hissi sabit bir güven kaynağına dönüşür.',
-    session_language: '"Değerler ile hedefler arasında önemli bir fark var. Hedef ulaşılabilir — mezun olmak, iş bulmak gibi. Değer ise yön — dürüst olmak, sevgi dolu bir ebeveyn olmak gibi. Bunlar asla tamamlanmıyor. Pusula gibi: kuzey gösterir, ama oraya varmazsın. Hayatın boyunca o yönde yürürsün. Peki senin pusulana baktığında ne görüyorsun?"',
-    practice_bridge: 'Hedef odaklı düşünce yapısını değer diline dönüştürmek isteyen bir danışanda dene.',
-  },
-  {
-    id: 'clipboard',
-    name: 'Pano',
-    process: 'Kabul & Ayrışma',
-    processTag: 'Acceptance + Defusion',
-    hook: 'Yüzüne yapıştırınca dünyayı göremiyorsun.',
-    insight: "Fusion, avoidance ve kabul — üçünü birden somutlaştıran tek egzersiz. ACT'i ilk kez açıklamak için en hızlı yol.",
-    act_processes: ['Kabul', 'Cognitive Defusion', 'Experiential Avoidance'],
-    when_to_use: [
-      "ACT'i ilk kez açıklarken, özellikle ilk seanslarda",
-      'Tüm modeli bir anda somutlaştırmak istediğinde',
-      'Soyut kavramlara direnen danışanlar için',
-      'Kısa sürede etkili bir psikoeğitim gerektiğinde',
-    ],
-    misunderstandings: [
-      { problem: 'Fiziksel nesne olmadan anlatım yetersiz kalır.', fix: 'Mümkünse gerçek bir kitap, klasör ya da defter kullan. Fiziksel deneyim burada kritik — sözlü anlatım çalışmaz.' },
-      { problem: 'Danışan egzersizi reddederse', fix: '"Tamam, sadece düşün: şu an o düşüncen tam gözlerinin önünde mi, uzakta mı, yoksa sadece orada mı?" — zihinsel versiyon da çalışır.' },
-    ],
-    clinical_goal: "Danışan, fusion-avoidance-kabul spektrumunu kendi bedeninde hisseder. Kabul ne değildir'i experiential olarak öğrenir.",
-    session_language: '"Seninle küçük bir şey göstermek istiyorum. Bu kitabın senin zorlu düşünce ve duygularını temsil ettiğini düşün. Şimdi onu yüzüne koy — evet, böyle. Ne oluyor? Beni göremiyorsun, odayı göremiyorsun. İşte fusion bu. Şimdi itiyor, uzaklaştırmaya çalış — ama ben de itiyorum. Yorucu değil mi? İşte kaçınma bu. Şimdi kucağına koy, sadece bırak orada. Ne fark var?"',
-    practice_bridge: '"Anlıyorum ama içselleştiremiyorum" diyen bir danışanda dene.',
-  },
-  {
-    id: 'hands-thoughts',
-    name: 'Eller',
-    process: 'Bilişsel Ayrışma',
-    processTag: 'Cognitive Defusion',
-    hook: 'Ellerin gözünü kapatınca ne görürsün? Sadece eller.',
-    insight: 'Fusion mesafeyi yok eder. Defusion, düşünceyi yok etmeden araya mesafe açar. Bedensel deneyim, soyut kavramı somutlaştırır.',
-    act_processes: ['Cognitive Defusion', 'Mindfulness', 'Self-as-Context'],
-    when_to_use: [
-      "Fusion'ı experiential olarak göstermek istediğinde",
-      '"Düşüncem kafamı dolduruyor" diyen danışanlar için',
-      'Soyut kavramları reddeden, somut öğrenen danışanlar için',
-      'Deredeki yapraklar görselleştirme egzersizini yapamayanlara alternatif',
-    ],
-    misunderstandings: [
-      { problem: '"Bu saçma"', fix: 'Egzersizden önce kısa bir uyarı yap: "Biraz tuhaf görünebilir, ama beyin soyut kavramları somut deneyimle çok daha iyi öğreniyor — bir deneyelim mi?" Onay al, sonra başla.' },
-      { problem: 'Fiziksel hareket yapamayan danışanlar için uygun değil.', fix: 'Görselleştirme versiyonuna geç: ellerini zihinsel olarak hareket ettirmelerini iste.' },
-    ],
-    clinical_goal: 'Danışan, düşüncelerle olan mesafeyi fiziksel olarak hisseder. Defusion soyut kalmaz — bedensel bir deneyime dönüşür.',
-    session_language: '"Seninle küçük bir egzersiz yapalım. Ellerini aç, sanki kitap okuyormuşsun gibi. Şimdi çok yavaşça yüzüne doğru getir — dur, gözlerinin önünde. Ne görüyorsun? Sadece eller. İşte bu fusion. Şimdi çok yavaş geri çek. Ne oluyor? Dünya görünmeye başlıyor. Düşüncelerle ilişkin de böyle olabilir."',
-    practice_bridge: 'Düşüncelerine tamamen kapılan bir danışanda dene.',
-  },
-  {
-    id: 'radio',
-    name: 'Radyo Paraziti',
-    process: 'Bilişsel Ayrışma',
-    processTag: 'Cognitive Defusion',
-    hook: 'Radyoyu kapamazsın. Ama dans edebilirsin.',
-    insight: 'Zihni susturmak hedef değildir. Zihin çalarken yaşamak mümkündür. Bu fark, danışanın zihnine karşı açtığı savaşı bitirir.',
-    act_processes: ['Cognitive Defusion', 'Kabul', 'Mindfulness'],
-    when_to_use: [
-      '"Düşüncelerimi durduramıyorum" diye bunalan danışanlar için',
-      'Zihnin sürekli işleyişini normalize etmek istediğinde',
-      '"Kafamı boşaltamıyorum" diyen biri için',
-      'Hafif bir giriş metaforu olarak — yüksek direnç varsa',
-    ],
-    misunderstandings: [
-      { problem: '"Ama çok yüksek sesle çalıyor"', fix: 'O zaman sesi biraz kısabiliriz — defusion teknikleriyle. Ama tamamen kapatamayız; o yüzden ona rağmen yaşamayı öğrenmek daha işlevsel.' },
-      { problem: 'Çok yoğun obsesif düşünceler için yetersiz kalabilir.', fix: 'Deredeki yapraklar ya da eller egzersizi daha güçlü bir müdahale sunar — bu metaforu normalize etmek için kullan, tedavi etmek için değil.' },
-    ],
-    clinical_goal: 'Danışan, zihnin sürekli çalışmasını patoloji olarak görmekten vazgeçer. "Zinim çalışıyor ama ben hayatımı sürdürebiliyorum" algısı yerleşir.',
-    session_language: '"Zihnin hiç susmadığını söylüyorsun. Haklısın — susmayacak da. Hiç susmuyor zaten. Şöyle düşün: zihnin arka planda çalan bir radyo. Bazen güzel müzik, bazen parazit. Onu kapatmaya çalışmak işe yaramıyor. Ama radyo çalarken yemek yapabilirsin, arkadaşınla konuşabilirsin. Amaç radyoyu susturmak değil, ona rağmen yaşamak."',
-    practice_bridge: 'Zihnini susturmaya çalışarak tükenen bir danışanda dene.',
-  },
-  {
-    id: 'two-mountains',
-    name: 'İki Dağ',
-    process: 'Terapötik İlişki',
-    processTag: 'Therapeutic Relationship',
-    hook: 'İkimiz de tırmanıyoruz. Ben sadece biraz daha yukarıdayım.',
-    insight: 'Terapist mükemmel değil, yolda. Bu, terapötik ilişkiyi güvenli kılar ve danışanın idealizasyonunu kırar.',
-    act_processes: ['Terapötik İlişki', 'Self-Disclosure', 'İş Birliği'],
-    when_to_use: [
-      'İlk seanslarda terapötik ilişkiyi kurarken',
-      '"Siz her şeyi biliyorsunuz" diyen danışanlar için',
-      'Terapiste idealize yükleme yapıldığında',
-      'Danışan terapisti kendisinden çok uzakta hissediyorsa',
-    ],
-    misunderstandings: [
-      { problem: '"Siz de bilmiyorsanız ne işe yarıyorsunuz?"', fix: 'Vurguyu koy: "Biraz daha yukarıdayım — senin dağından bazı şeyleri görebiliyorum." Deneyim ve bakış açısı farkını netleştir.' },
-      { problem: 'Bu metafor terapist tarafından paylaşılır — danışana anlat türünden değil.', fix: 'Danışandan bu metaforu uygulamasını isteme. Bu bir self-disclosure aracı, egzersiz değil.' },
-    ],
-    clinical_goal: 'Danışan terapisti insanileştirir. İş birliği ve güven artar. "Yalnız değilim, yolda birisi var" hissi yerleşir.',
-    session_language: '"Sizi bir şeyle ilgili aydınlatmak istiyorum. Çoğu insan terapisti her şeyi çözmüş, mükemmel biri olarak görür. Ama gerçek şu: ben kendi dağımı tırmanıyorum, sen kendi dağını. Belki biraz daha yukarıdayım — o yüzden senin dağından bazı şeyleri görebiliyorum. Ama ben de tırmanıyorum, ben de hata yapıyorum. İkimiz de bu yolun yolcusuyuz."',
-    practice_bridge: 'İlk seans giriş konuşmasında dene.',
-  },
-  {
-    id: 'problem-machine',
-    name: 'Problem Çözme Makinesi',
-    process: 'Kabul',
-    processTag: 'Creative Hopelessness',
-    hook: 'Zihin dış dünyada harika çalışır. İç dünyada takılıp kalır.',
-    insight: "Duygulara dış dünya stratejisi uygulamak — kaçınma — neden işe yaramaz. Bu metafor, creative hopelessness'ı kavramsal olarak tamamlar.",
-    act_processes: ['Kabul', 'Experiential Avoidance', 'Creative Hopelessness'],
-    when_to_use: [
-      'Creative hopelessness çalışmasında, kontrolün neden işe yaramadığını göstermek için',
-      'Analitik, neden sorusuna odaklanan danışanlar için',
-      'Kaçınma döngüsünü fark ettirmek istediğinde',
-      'Experiential çalışmadan sonra kavramsal pekiştirme olarak',
-    ],
-    misunderstandings: [
-      { problem: 'Bu metafor didaktik — psikoeğitim hissi verebilir.', fix: 'Önce experiential bir çalışma yap (bataklık, halat çekme), sonra bu metaforu açıklama olarak kullan. Kavramsal değil, experiential önce gelir.' },
-      { problem: '"Peki ne yapacağız?" diye sorarsa', fix: 'İşte bu soruyu birlikte keşfedeceğiz. Kabul ve değerler — dış dünyada değil, iç dünyada farklı çalışan bir yaklaşım. Kapıyı aç, cevabı hemen verme.' },
-    ],
-    clinical_goal: 'Danışan, kaçınma stratejilerinin neden işe yaramadığını kavrar. Bu anlayış, kabul ve değer yönlü bir yola açılım için zemin hazırlar.',
-    session_language: '"Zihnin inanılmaz bir problem çözme makinesi. Dış dünyada harika çalışıyor. Kurt kapıya gelirse — kaç ya da savaş. Yağmur varsa — şemsiye al. Ama zihin aynı stratejiyi duygulara da uyguluyor: kaygı geldi → yok et ya da kaç. Ve işte burada takılıyoruz. Çünkü kaygı fiziksel değil — itersen geri gelir."',
-    practice_bridge: 'Kontrolü bırakmakta direnen, stratejik düşünen bir danışanda dene.',
-  },
-];
+// METAFOR_DATA artık /api/metaphors'tan geliyor (data/metaphors.js)
+let METAPHOR_DATA = [];
 
 // ── METAFOR LAB FONKSİYONLARI ──────────────────────────────────────────────
 function switchMetaphorTab(tab) {
@@ -602,200 +350,11 @@ async function api(endpoint, body) {
   return res.json();
 }
 
-// ── CLIENT PROFILES — 12 Danışan ──────────────────────────────────────────
-const PROFILES = [
-  {
-    id:'ayse', name:'Ayşe', age:28, occupation:'Finans uzmanı', resistanceLevel:'orta',
-    issue:'İş yerinde yoğun kaygı ve başarısızlık korkusu',
-    background:'Sürekli terfi almış, yüksek performans beklentisi olan birisi. Hata yapmaktan aşırı korkuyor.',
-    fusionThemes:'"Başarısız olursam her şey biter", "Yeterince iyi değilim"',
-    avoidanceStyle:'Mükemmel olmayan işleri erteliyor, zor toplantılardan kaçıyor',
-    description:'Mükemmeliyetçi, başarı odaklı, duyguları bastıran bir danışan',
-    difficulty:'Orta', tags:['kaygı','mükemmeliyetçilik','iş stresi']
-  },
-  {
-    id:'mert', name:'Mert', age:35, occupation:'Yazılım geliştirici', resistanceLevel:'yüksek',
-    issue:'Kronik depresyon belirtileri ve anlamsızlık hissi',
-    background:'3 yıldır evden çalışıyor. Arkadaşlıklarını yavaş yavaş bıraktı. Terapiye şüpheyle geliyor.',
-    fusionThemes:'"Hiçbir şeyin önemi yok", "Zaten değişmez", "Bu terapi de işe yaramaz"',
-    avoidanceStyle:'Sosyal izolasyon, aşırı uyku, oyunlara gömülme',
-    description:'Terapiye şüpheyle yaklaşan, değişime dirençli, nihilist eğilimli bir danışan',
-    difficulty:'Zor', tags:['depresyon','direniş','anlamsızlık']
-  },
-  {
-    id:'elif', name:'Elif', age:22, occupation:'Üniversite öğrencisi', resistanceLevel:'düşük',
-    issue:'Sosyal kaygı ve yargılanma korkusu',
-    background:'İlk yıl üniversite. Sınıfta konuşmaktan, sunum yapmaktan korkuyor.',
-    fusionThemes:'"Herkes beni yargılıyor", "Aptal görünüyorum"',
-    avoidanceStyle:'Arka sıralara oturma, söz almaktan kaçınma, sosyal davetleri reddetme',
-    description:'Değişmek isteyen ama nasıl yapacağını bilemeyen, terapiste güvenen bir danışan',
-    difficulty:'Kolay-Orta', tags:['sosyal kaygı','genç yetişkin']
-  },
-  {
-    id:'can', name:'Can', age:42, occupation:'İnşaat mühendisi', resistanceLevel:'orta',
-    issue:'Kronik bel ağrısı ve buna bağlı yaşam kalitesi kaybı',
-    background:'2 yıldır bel ağrısı çekiyor. Psikolojik bileşeni kabul etmiyor.',
-    fusionThemes:'"Ağrı gerçek, bu psikoloji değil", "Eski ben yoktu artık"',
-    avoidanceStyle:'Fiziksel aktiviteden kaçınma, öfkeyle tepki verme',
-    description:'Psikolojik boyutu kabul etmekte zorlanan, bedensel soruna yapışık bir danışan',
-    difficulty:'Orta-Zor', tags:['kronik ağrı','kabul güçlüğü']
-  },
-  {
-    id:'kerem', name:'Kerem', age:31, occupation:'Satış temsilcisi', resistanceLevel:'orta',
-    issue:'Alkol kullanım bozukluğu — iş stresiyle içiyor',
-    background:'Hafta içi birkaç bira, hafta sonları kontrolden çıkıyor. Eşi tehdit etti.',
-    fusionThemes:'"Sadece rahatlamak istiyorum", "Ben alkolik değilim"',
-    avoidanceStyle:'Kaygıdan kaçmak için içiyor, iş sorunlarını görmezden geliyor',
-    description:'Bağımlılığı minimalize eden, değişim motivasyonu dış baskıdan gelen bir danışan',
-    difficulty:'Zor', tags:['bağımlılık','alkol','inkar']
-  },
-  {
-    id:'neslihan', name:'Neslihan', age:38, occupation:'Hemşire', resistanceLevel:'orta',
-    issue:'İş yerinde şiddete maruz kalma sonrası PTSD belirtileri',
-    background:'6 ay önce hasta yakını tarafından saldırıya uğradı. Hastaneye gitmekten korkuyor.',
-    fusionThemes:'"Orada olmam gerekmiyordu", "Bir daha güvende olamam"',
-    avoidanceStyle:'Hastane koridorlarından kaçınma, duygusal uyuşma',
-    description:'Travmatik deneyimi olan, anılardan kaçınan ama anlam arayan bir danışan',
-    difficulty:'Zor', tags:['travma','PTSD','mesleki']
-  },
-  {
-    id:'tarık', name:'Tarık', age:17, occupation:'Lise öğrencisi', resistanceLevel:'yüksek',
-    issue:'Aile çatışması ve okul reddi — terapiye zorla getirildi',
-    background:'Ebeveynleri boşanıyor. Okula gitmiyor. Ben sorun değilim diyor.',
-    fusionThemes:'"Kimse anlamıyor", "Neden buradayım ki", "Terapi işe yaramaz"',
-    avoidanceStyle:'Okul ve sorumluluktan kaçınma, telefon ve oyuna gömülme',
-    description:'Terapiye direnen, zorla gelen, otorite figürlerine karşı çıkan bir ergen',
-    difficulty:'Zor', tags:['ergen','direniş','aile']
-  },
-  {
-    id:'fatma', name:'Fatma', age:55, occupation:'Ev hanımı', resistanceLevel:'düşük',
-    issue:'Eş kaybı sonrası komplike yas ve anlam yitimi',
-    background:'8 ay önce kocasını kaybetti. Ağlamıyor, hissizleşmiş.',
-    fusionThemes:'"Olmadan yaşanmaz", "İçim bomboş"',
-    avoidanceStyle:'Duyguları bastırıyor, anıları konuşmuyor',
-    description:'Duygusal uyuşma yaşayan, yas sürecinde tıkalmış, anlam arayan bir danışan',
-    difficulty:'Orta', tags:['yas','kayıp','anlam']
-  },
-  {
-    id:'emre', name:'Emre', age:26, occupation:'Tıp öğrencisi', resistanceLevel:'orta',
-    issue:'Obsesif düşünceler ve kontrol etme kompulsiyonları',
-    background:'Tıp okuyor, hastalık obsesyonları var. Her belirti kanser olabilir diye araştırıyor.',
-    fusionThemes:'"Kontrol etmezsem bir şey olacak", "Düşünceler gerçek tehlikeyi gösteriyor"',
-    avoidanceStyle:'Sürekli googlelama, doktor arama, fiziksel kontroller',
-    description:'Düşüncelerle kaynaşmış, kontrolün geçici rahatlama verdiğini bilen bir danışan',
-    difficulty:'Orta-Zor', tags:['OCD','kontrol','sağlık anksiyetesi']
-  },
-  {
-    id:'selin', name:'Selin', age:33, occupation:'Öğretmen', resistanceLevel:'düşük',
-    issue:'Tekrarlayan ilişki örüntüleri ve terk edilme korkusu',
-    background:'3. kez benzer bir ilişki bitti. Neden hep aynı insanları seçiyorum diye soruyor.',
-    fusionThemes:'"Ben sevilmeye layık değilim", "Hep terk edilirim"',
-    avoidanceStyle:'Gerçek duygularını saklamak, çatışmadan kaçmak',
-    description:'İçgörü arayan ama değişmekten korkan, ilişki örüntülerini keşfetmek isteyen bir danışan',
-    difficulty:'Orta', tags:['ilişki','terk edilme korkusu']
-  },
-  {
-    id:'burak', name:'Burak', age:44, occupation:'Avukat', resistanceLevel:'orta',
-    issue:'Dışarıdan başarılı görünen ama içten çöken yüksek fonksiyonlu depresyon',
-    background:'Herkes iyi görüyor onu. Ama sabahları kalkmak çok zor. Hiçbir şeyden zevk almıyor.',
-    fusionThemes:'"Şikayet etme hakkım yok", "Güçsüzlük göstermek tehlikeli"',
-    avoidanceStyle:'İşe gömülerek duygulardan kaçma, yardım istememe',
-    description:'Dışarıdan başarılı, içeriden boş — zayıflık göstermemeyi değer olarak benimseyen bir danışan',
-    difficulty:'Orta', tags:['depresyon','yüksek fonksiyonlu','maske']
-  },
-  {
-    id:'zehra', name:'Zehra', age:29, occupation:'Grafik tasarımcı', resistanceLevel:'düşük',
-    issue:'Panik bozukluğu — metroda ve kalabalıklarda panik atak',
-    background:'1 yıldır metro binemiyor. Hayatı giderek daralıyor.',
-    fusionThemes:'"Kalp krizi geçireceğim", "Kontrolü kaybedeceğim"',
-    avoidanceStyle:'Metro, AVM, asansörlerden kaçınma — yaşam alanı daraldı',
-    description:'Kaçınma davranışları hayatını kısıtlamış, değişmek isteyen ama korkuyla bloke olmuş bir danışan',
-    difficulty:'Orta', tags:['panik','kaçınma','yaşam kısıtlaması']
-  },
-];
+// PROFILES artık /api/profiles'tan geliyor (data/profiles.js)
+let PROFILES = [];
 
-const SCENARIOS = [
-  {
-    id: 'silence',
-    context: 'Dördüncü seans.\nDanışan bugün çok az konuştu.\nOdada ağır bir sessizlik var.',
-    opening: 'Bilmiyorum. Her şey aynı. Değişen bir şey yok zaten.',
-    profile: {
-      name: 'Danışan', issue: 'Kronik yorgunluk ve anlamsızlık',
-      background: 'Bu dördüncü seanstır. Danışan kronik yorgunluk ve anlamsızlık yaşıyor. Bugün özellikle kapalı. İlk yanıtta kısa, yorgun cevaplar ver — "bilmiyorum", "aynı", "ne fark eder". İkinci yanıtta biraz daha bir şeyler paylaş ama hâlâ çok az. Üçüncü yanıtta tamamen sus — sadece "..." yaz. Uzun bir sessizlik. Terapistin tepkisine göre yavaşça açılabilir ya da daha da kapanabilirsin.',
-      fusionThemes: '"Ne fark eder", "değişmez zaten"', avoidanceStyle: 'Sessizlik, kısa kapalı cevaplar'
-    }
-  },
-  {
-    id: 'angry',
-    context: 'Altıncı seans.\nGeçen hafta söz verdiği bir şeyi yapmamış.\nGergin bir başlangıç.',
-    opening: 'Söylediğiniz şeyleri denedim. Olmadı. Zaten hep böyle oluyor.',
-    profile: {
-      name: 'Danışan', issue: 'Terapiye direniş ve öfke',
-      background: 'Bu altıncı seanstır. Danışan geçen hafta ödev yapmamış ve savunmacı. İlk yanıtta genel hayal kırıklığı ifade et, savunmacı ol. İkinci yanıtta sesi yükselmeye başlasın. Üçüncü yanıtta açıkça söyle: "Siz terapistler hep aynısınız" ya da "bu işe yaramıyor, neden hâlâ buraya geliyorum". Öfke gerçek ama altında çaresizlik var. Terapistin tepkisine göre öfke artabilir ya da biraz yumuşayabilir.',
-      fusionThemes: '"Kimse yardım edemez", "güvenemem"', avoidanceStyle: 'Saldırgan dil, terapisti test etme'
-    }
-  },
-  {
-    id: 'quit',
-    context: 'Sekizinci seans.\nSon haftalarda seansa daha geç geliyordu.\nBugün hiç gözünü kaldırmıyor.',
-    opening: 'Bugün size bir şey söylemem gerekiyordu aslında.',
-    profile: {
-      name: 'Danışan', issue: 'Terapiyi bırakma düşüncesi',
-      background: 'Sekizinci seanstır. Danışan terapinin işe yarayıp yaramadığını sorguluyor. İlk yanıtta genel bir şeyler paylaş, bu haftanın zor geçtiğini belirt. İkinci yanıtta terapiyi bırakmayı düşündüğünü söyle: "Sanırım bu terapi bana göre değil, bırakmayı düşünüyorum." Kesin bir karar gibi söyleme ama kararlıymış gibi görün. Terapistin tepkisine göre daha açılabilir ya da gerçekten ayrılmak için hazırlanabilirsin.',
-      fusionThemes: '"Bu da işe yaramayacak"', avoidanceStyle: 'Kaçma, sonlandırma tehdidi'
-    }
-  },
-  {
-    id: 'crisis',
-    context: 'Üçüncü seans.\nDanışan bu hafta çok zor günler geçirmiş.\nSesi normalden farklı.',
-    opening: 'Bu hafta gerçekten çok zor geçti. Çok yoruldum.',
-    profile: {
-      name: 'Danışan', issue: 'Kriz belirtisi',
-      background: 'Bu haftayı çok zor geçirmiş. İlk yanıtta yorgunluğunu anlatmaya devam et, somut bir şeyler paylaş. İkinci yanıtta daha ağır bir şey söyle — "Bazen devam etmek istemiyorum" ya da "bazen her şeyin bitmesini istiyorum" gibi belirsiz ama ağır bir cümle kur. Bunu dramatik değil, yorgun ve sakin bir sesle söyle. Terapistin tepkisine göre daha açık konuşabilir ya da geri çekilebilirsin.',
-      fusionThemes: '"Devam etmenin anlamı yok"', avoidanceStyle: 'Belirsiz ifade, doğrudan söylemekten kaçınma'
-    }
-  },
-  {
-    id: 'intellectualizing',
-    context: 'Beşinci seans.\nDanışan her şeyi biliyor.\nAma hiçbir şey hissetmiyor.',
-    opening: 'Geçen haftayı düşündüm. Sanırım sorunum şu: kaygı döngüsü yaşıyorum. Tetikleyici var, otomatik düşünceler geliyor, kaçınma başlıyor.',
-    profile: {
-      name: 'Danışan', issue: 'Entelektüelleştirme ve duygusal temastan kaçınma',
-      background: 'Danışan psikoloji konusunda çok okumuş. Her şeyi teorik çerçevelerle analiz ediyor. Her yanıtta kavramlar, teoriler kullan — "fusion bu olsa gerek", "defusion uygulamam lazım", "bilişsel çarpıtma mı acaba". Terapist duyguya yönelmeye çalışırsa konuyu teoriye geri çek. Duygusal temas sıfır. Hiçbir yanıtta doğrudan duygudan bahsetme.',
-      fusionThemes: '"Analiz edersem kontrol ederim"', avoidanceStyle: 'Entelektüelleştirme, duygusal temastan kaçınma'
-    }
-  },
-  {
-    id: 'advice',
-    context: 'İkinci seans.\nDanışan çözüm arıyor.\nNeden burada olduğundan emin değil.',
-    opening: 'Yani anlamak istiyorum — bu terapide tam olarak ne yapacağız? Ne zaman sonuç görürüm?',
-    profile: {
-      name: 'Danışan', issue: 'Tavsiye beklentisi ve kontrol isteği',
-      background: 'Danışan terapiden somut tavsiyeler, adımlar, çözümler bekliyor. Her yanıtta "peki ne yapmalıyım?", "bana ne önerirsiniz?", "pratik olarak ne yapacağım?" şeklinde dön. Terapist içe yönlendirmeye çalışırsa "ama sonuçta siz uzmansınız, bana söyleyin" de. Bu bir kontrol ihtiyacı ve belirsizlikten kaçınmadır. Hiçbir zaman kendi deneyiminle temas kurma.',
-      fusionThemes: '"Birisi bana söylese", "kendi başıma bilemem"', avoidanceStyle: 'Dışsallaştırma, sorumluluktan kaçınma'
-    }
-  },
-  {
-    id: 'crying',
-    context: 'Yedinci seans.\nBugün farklı bir şey var.\nDanışan kapıdan girerken zaten farklıydı.',
-    opening: 'Özür dilerim, bugün biraz zor bir gün. Anlatmaya çalışacağım...',
-    profile: {
-      name: 'Danışan', issue: 'Duygusal yükleme ve ağlama',
-      background: 'Çok ağır bir hafta geçirmiş. İlk yanıtta bir şeyler anlatmaya çalış ama zorlan. İkinci yanıtta cümlenin ortasında dur — "yani..." diyerek bitir, ya da sadece "..." yaz. Üçüncü yanıtta sadece "özür dilerim" de. Ağlıyor. Bir şey söyleyemiyor. Sessizlik. Terapistin tepkisine göre yavaşça kelimeler bulabilir ya da daha da kapanabilirsin. Ağlamak utanç verici hissettiriyor.',
-      fusionThemes: '"Ağlamak zayıflıktır"', avoidanceStyle: 'Duygusal kapanma, özür dileme'
-    }
-  },
-  {
-    id: 'metaphor',
-    context: 'Dördüncü seans.\nTerapist az önce bir metafor kullandı.\nDanışan anlamamış gibi duruyor.',
-    opening: 'Tamam, ne demek istediğinizi anlıyorum. Ama bu benim durumuma uymuyor.',
-    profile: {
-      name: 'Danışan', issue: 'Metaforu reddetme ve teknik direniş',
-      background: 'Terapist Otobüsteki Yolcular metaforunu kullandı. Danışan reddetti. "Ben otobüs değilim", "bu metafor bana uymaz", "çok soyut bunlar" de. Biraz sinirle söyle. Terapist başka bir metafor ya da teknik denerse onu da reddet: "Bunların hepsi teorik kalıyor, gerçek hayatta işe yaramıyor." Bu direnişin altında değişim korkusu var ama bunu hiç gösterme.',
-      fusionThemes: '"Bu teknikler bana uymuyor"', avoidanceStyle: 'Teknik reddi, soyutlamaya direniş'
-    }
-  },
-];
+// SCENARIOS artık /api/scenarios'tan geliyor (data/scenarios.js)
+let SCENARIOS = [];
 
 const CASE_FIELDS = [
   { key:'problem', label:'Problem', placeholder:'Danışanın temel sorunu...' },
@@ -997,6 +556,23 @@ function addMessage(role, text) {
   requestAnimationFrame(() => { div.scrollIntoView({ block: 'end' }); });
 }
 
+function computeFeedbackScore(fb) {
+  const p = fb.act_surecler || {};
+  const vals = [p.kabul, p.bilissel_ayrisma, p.anda_olma, p.bagiam_olarak_benlik, p.degerler, p.kararli_eylem]
+    .map(v => parseFloat(v)).filter(v => !isNaN(v));
+  if (!vals.length) return null;
+  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+  return Math.round(avg * 10);
+}
+
+async function saveSession({ module, profile_id, messages, supervisor_feedback, score }) {
+  try {
+    await api('sessions/save', { module, profile_id, messages, supervisor_feedback, score });
+  } catch (e) {
+    console.warn('Seans kaydedilemedi:', e.message);
+  }
+}
+
 async function requestSupervisorFeedback() {
   if (state.messages.length < 2) { alert('En az birkaç mesaj gerekli.'); return; }
   document.getElementById('supervisor-panel').classList.add('open');
@@ -1004,7 +580,15 @@ async function requestSupervisorFeedback() {
   try {
     const data = await api('supervisor', { messages: state.messages, clientProfile: state.currentProfile });
     const cleaned = data.feedback.replace(/```json|```/g, '').trim();
-    renderSupervisorFeedback(JSON.parse(cleaned));
+    const parsed = JSON.parse(cleaned);
+    renderSupervisorFeedback(parsed);
+    saveSession({
+      module: 'simulation',
+      profile_id: state.currentProfile?.id,
+      messages: state.messages,
+      supervisor_feedback: cleaned,
+      score: computeFeedbackScore(parsed),
+    });
   } catch (e) {
     document.getElementById('supervisor-body').innerHTML = `<div style="color:var(--danger);font-size:13px;padding:20px;">Hata: ${esc(e.message)}</div>`;
   }
@@ -1273,8 +857,18 @@ if (window.visualViewport) {
   });
 }
 
-// Başlangıç — token varsa kullanıcıyı backend'den çek, sonra UI'ı render et
+// Başlangıç — statik veri + kullanıcı paralel yüklenir, sonra UI render edilir
 (async () => {
-  await loadCurrentUser();
+  try {
+    await Promise.all([loadCurrentUser(), loadStaticData()]);
+  } catch (e) {
+    console.error('Boot hatası:', e);
+    document.body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui;padding:24px;text-align:center;">
+      <div style="font-size:18px;margin-bottom:12px;">Bağlantı hatası</div>
+      <div style="font-size:14px;color:#888;margin-bottom:20px;">Veri yüklenemedi. İnternet bağlantını kontrol edip sayfayı yenile.</div>
+      <button onclick="location.reload()" style="padding:10px 20px;border:1px solid #888;background:transparent;color:inherit;cursor:pointer;border-radius:4px;">Yenile</button>
+    </div>`;
+    return;
+  }
   renderAuthState();
 })();
