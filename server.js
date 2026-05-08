@@ -5,7 +5,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import path from "path";
 import { fileURLToPath } from "url";
-import Groq from "groq-sdk";
+import Anthropic from "@anthropic-ai/sdk";
 import { PROMPTS } from "./prompts.js";
 import { supabaseAdmin, supabasePublic, requireAuth, requirePremium } from "./auth.js";
 import { PROFILES } from "./data/profiles.js";
@@ -47,14 +47,32 @@ app.use(express.json({ limit: "16kb" }));
 // Frontend'i serve et
 app.use(express.static(path.join(__dirname, "public")));
 
-// Groq client (lazy — sunucu API key olmadan da ayağa kalksın)
-let _groq;
-function groq() {
-  if (!_groq) {
-    if (!process.env.GROQ_API_KEY) throw new Error("GROQ_API_KEY tanımlı değil");
-    _groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+// Anthropic client (lazy)
+let _anthropic;
+function ai() {
+  if (!_anthropic) {
+    if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY tanımlı değil");
+    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   }
-  return _groq;
+  return _anthropic;
+}
+
+// Ortak Anthropic çağrısı — OpenAI formatındaki messages'ı Claude formatına çevirir
+async function chat({ system, messages, model = "claude-haiku-4-5-20251001", max_tokens = 1024, temperature = 0.8 }) {
+  const claudeMessages = messages.map(m => ({ role: m.role, content: m.content }));
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await ai().messages.create({ model, max_tokens, temperature, system, messages: claudeMessages });
+      return res.content[0].text;
+    } catch (e) {
+      const overloaded = e?.status === 529 || e?.error?.type === "overloaded_error";
+      if (overloaded && attempt < 2) {
+        await new Promise(r => setTimeout(r, (attempt + 1) * 2000));
+        continue;
+      }
+      throw e;
+    }
+  }
 }
 
 // ── STATIC DATA (public, cache'lenir) ───────────────────────────────────────
@@ -96,10 +114,11 @@ app.post("/api/auth/register", authLimiter, async (req, res) => {
   });
   if (error) return res.status(400).json({ error: error.message });
 
+  const userPlan = plan === "premium" ? "premium" : "free";
   const { error: profileErr } = await supabaseAdmin.from("profiles").insert({
     user_id: data.user.id,
     name,
-    plan: "free",
+    plan: userPlan,
   });
   if (profileErr) {
     await supabaseAdmin.auth.admin.deleteUser(data.user.id);
@@ -114,7 +133,7 @@ app.post("/api/auth/register", authLimiter, async (req, res) => {
 
   res.json({
     token: session.session.access_token,
-    user: { id: data.user.id, email, name, plan: "free" },
+    user: { id: data.user.id, email, name, plan: userPlan },
   });
 });
 
@@ -150,43 +169,39 @@ app.get("/api/auth/me", requireAuth, (req, res) => {
 
 // ── API ROUTES ──────────────────────────────────────────────────────────────
 
-// POST /api/session — Danışan yanıtı (free trial 3, sonra premium UI'da gating)
+// POST /api/session — Danışan yanıtı
 app.post("/api/session", requireAuth, async (req, res) => {
   const { messages, clientProfile } = req.body;
   try {
-    const completion = await groq().chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: PROMPTS.simulatedSession(clientProfile) },
-        ...messages,
-      ],
-      temperature: 0.88,
-      max_tokens: 300,
+    const reply = await chat({
+      model: "claude-sonnet-4-6",
+      system: PROMPTS.simulatedSession(clientProfile),
+      messages,
+      temperature: 0.9,
+      max_tokens: 350,
     });
-    res.json({ reply: completion.choices[0].message.content });
+    res.json({ reply });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
   }
 });
 
-// POST /api/supervisor — Süpervizör geri bildirimi (free trial dahil)
+// POST /api/supervisor — Süpervizör geri bildirimi
 app.post("/api/supervisor", requireAuth, async (req, res) => {
   const { messages, clientProfile } = req.body;
   const transcript = messages
     .map((m) => `${m.role === "user" ? "TERAPİST" : "DANIŞAN"}: ${m.content}`)
     .join("\n");
   try {
-    const completion = await groq().chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: PROMPTS.supervisor(clientProfile) },
-        { role: "user", content: `Seans transkripti:\n\n${transcript}` },
-      ],
-      temperature: 0.5,
-      max_tokens: 900,
+    const feedback = await chat({
+      model: "claude-sonnet-4-6",
+      system: PROMPTS.supervisor(clientProfile),
+      messages: [{ role: "user", content: `Seans transkripti:\n\n${transcript}` }],
+      temperature: 0.4,
+      max_tokens: 1024,
     });
-    res.json({ feedback: completion.choices[0].message.content });
+    res.json({ feedback });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
@@ -274,6 +289,17 @@ app.get("/api/sessions/:id", requireAuth, async (req, res) => {
   res.json({ session: data });
 });
 
+// DELETE /api/sessions/:id — seans sil
+app.delete("/api/sessions/:id", requireAuth, async (req, res) => {
+  const { error } = await supabaseAdmin
+    .from("sessions")
+    .delete()
+    .eq("id", req.params.id)
+    .eq("user_id", req.user.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
 // GET /api/progress — modül bazlı yetkinlik puanları
 app.get("/api/progress", requireAuth, async (req, res) => {
   const { data, error } = await supabaseAdmin
@@ -288,16 +314,14 @@ app.get("/api/progress", requireAuth, async (req, res) => {
 app.post("/api/academy", requireAuth, async (req, res) => {
   const { topic } = req.body;
   try {
-    const completion = await groq().chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: PROMPTS.academy(topic) },
-        { role: "user", content: `${topic} konusunda eğitim içeriği oluştur.` },
-      ],
-      temperature: 0.5,
-      max_tokens: 1200,
+    const content = await chat({
+      model: "claude-haiku-4-5-20251001",
+      system: PROMPTS.academy(topic),
+      messages: [{ role: "user", content: `${topic} konusunda eğitim içeriği oluştur.` }],
+      temperature: 0.4,
+      max_tokens: 1500,
     });
-    res.json({ content: completion.choices[0].message.content });
+    res.json({ content });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
@@ -308,19 +332,14 @@ app.post("/api/academy", requireAuth, async (req, res) => {
 app.post("/api/difficult", requireAuth, requirePremium, async (req, res) => {
   const { scenario, therapistResponse } = req.body;
   try {
-    const completion = await groq().chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: PROMPTS.difficultMoment(scenario) },
-        {
-          role: "user",
-          content: `Terapistin müdahalesi: "${therapistResponse}"`,
-        },
-      ],
-      temperature: 0.6,
-      max_tokens: 700,
+    const evaluation = await chat({
+      model: "claude-sonnet-4-6",
+      system: PROMPTS.difficultMoment(scenario),
+      messages: [{ role: "user", content: `Terapistin müdahalesi: "${therapistResponse}"` }],
+      temperature: 0.5,
+      max_tokens: 800,
     });
-    res.json({ evaluation: completion.choices[0].message.content });
+    res.json({ evaluation });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
@@ -331,19 +350,14 @@ app.post("/api/difficult", requireAuth, requirePremium, async (req, res) => {
 app.post("/api/case-formulation", requireAuth, requirePremium, async (req, res) => {
   const { formulation } = req.body;
   try {
-    const completion = await groq().chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: PROMPTS.caseFormulation() },
-        {
-          role: "user",
-          content: `Problem: ${formulation.problem}\nFusion: ${formulation.fusion}\nAvoidance: ${formulation.avoidance}\nValues: ${formulation.values}\nAction: ${formulation.action}`,
-        },
-      ],
-      temperature: 0.5,
-      max_tokens: 1000,
+    const feedback = await chat({
+      model: "claude-sonnet-4-6",
+      system: PROMPTS.caseFormulation(),
+      messages: [{ role: "user", content: `Problem: ${formulation.problem}\nFusion: ${formulation.fusion}\nAvoidance: ${formulation.avoidance}\nValues: ${formulation.values}\nAction: ${formulation.action}` }],
+      temperature: 0.4,
+      max_tokens: 1200,
     });
-    res.json({ feedback: completion.choices[0].message.content });
+    res.json({ feedback });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: e.message });
@@ -354,21 +368,53 @@ app.post("/api/case-formulation", requireAuth, requirePremium, async (req, res) 
 app.post("/api/metaphor", requireAuth, async (req, res) => {
   const { metaphorName, userScenario } = req.body;
   try {
-    const completion = await groq().chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: PROMPTS.metaphorLab() },
-        {
-          role: "user",
-          content: `Metafor: "${metaphorName}"\nKullanıcının senaryosu: "${userScenario}"`,
-        },
-      ],
-      temperature: 0.6,
-      max_tokens: 800,
+    const guidance = await chat({
+      model: "claude-haiku-4-5-20251001",
+      system: PROMPTS.metaphorLab(),
+      messages: [{ role: "user", content: `Metafor: "${metaphorName}"\nKullanıcının senaryosu: "${userScenario}"` }],
+      temperature: 0.5,
+      max_tokens: 900,
     });
-    res.json({ guidance: completion.choices[0].message.content });
+    res.json({ guidance });
   } catch (e) {
     console.error(e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/growth-profile — AI destekli terapötik esneklik profili
+app.get("/api/growth-profile", requireAuth, async (req, res) => {
+  const { data: sessions, error } = await supabaseAdmin
+    .from("sessions")
+    .select("module, supervisor_feedback, created_at")
+    .eq("user_id", req.user.id)
+    .not("supervisor_feedback", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(15);
+
+  if (error) return res.status(500).json({ error: error.message });
+  if (!sessions || sessions.length === 0) {
+    return res.json({ profile: null });
+  }
+
+  const sessionsText = sessions.map((s, i) => {
+    const date = new Date(s.created_at).toLocaleDateString("tr-TR");
+    return `--- Seans ${i + 1} (${s.module}, ${date}) ---\n${s.supervisor_feedback}`;
+  }).join("\n\n");
+
+  try {
+    const raw = await chat({
+      model: "claude-sonnet-4-6",
+      system: PROMPTS.growthProfile(sessionsText),
+      messages: [{ role: "user", content: "Profili oluştur." }],
+      temperature: 0.3,
+      max_tokens: 1500,
+    });
+    const cleaned = raw.replace(/```json|```/g, "").trim();
+    const profile = JSON.parse(cleaned);
+    res.json({ profile });
+  } catch (e) {
+    console.error("growth-profile hatası:", e);
     res.status(500).json({ error: e.message });
   }
 });

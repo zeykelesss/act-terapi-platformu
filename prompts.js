@@ -175,6 +175,39 @@ SADECE bu JSON formatında yanıt ver:
 Sadece JSON.
 `,
 
+  growthProfile: (sessionsText) => `
+Sen bir ACT süpervizörü ve eğitimcisin. Aşağıda bir terapist adayının geçmiş seans süpervizör notları var.
+Bu notları analiz ederek terapistin klinik gelişim profilini çıkar.
+
+SEANS NOTLARI:
+${sessionsText}
+
+Yanıtını SADECE aşağıdaki JSON formatında ver. Gözlemler Türkçe, kısa, yargılamayan ve ACT diliyle olsun.
+Veri yetersizse alanı "Henüz veri yok" olarak bırak.
+
+{
+  "actProcesses": {
+    "acceptance": "Danışanın zor duygusuyla kalma kapasitesine dair gözlem",
+    "defusion": "Düşünce içerikleriyle ilişkilenme biçimine dair gözlem",
+    "presence": "Anda kalma ve sessizlik toleransına dair gözlem",
+    "values": "Değer keşfi çalışmasına dair gözlem",
+    "committedAction": "Taahhüt ve somut adım çalışmasına dair gözlem"
+  },
+  "therapeuticStyle": ["stil etiketi 1", "stil etiketi 2", "stil etiketi 3"],
+  "clinicalObservations": [
+    "Gözlem 1 — belirli bir örüntü veya eğilim",
+    "Gözlem 2",
+    "Gözlem 3"
+  ],
+  "challengeAreas": [
+    "Zorlanılan alan 1",
+    "Zorlanılan alan 2"
+  ]
+}
+
+Sadece JSON. Açıklama ekleme.
+`,
+
   metaphorLab: () => `
 Sen ACT metaforlarını hem teorik hem klinik açıdan çok iyi bilen bir eğitimcisin.
 

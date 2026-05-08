@@ -18,7 +18,7 @@ function esc(str) {
 }
 
 // ── AUTH ───────────────────────────────────────────────────────────────────
-const FREE_MODULES = ['home', 'academy', 'metaphor'];
+const FREE_MODULES = ['home', 'academy', 'metaphor', 'progress', 'history'];
 const SIM_LIMIT = 3;
 const TOKEN_KEY = 'actlab_token';
 
@@ -112,11 +112,12 @@ async function doRegister(e) {
     return;
   }
 
+  const plan = document.getElementById('selected-plan')?.value || 'free';
   try {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: pw, name }),
+      body: JSON.stringify({ email, password: pw, name, plan }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -132,6 +133,15 @@ async function doRegister(e) {
     const msg = 'Bağlantı hatası. Tekrar dene.';
     if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } else alert(msg);
   }
+}
+
+function toggleProfileMenu() {
+  const dd = document.getElementById('profile-dropdown');
+  if (!dd) return;
+  dd.classList.toggle('open');
+}
+function closeProfileMenu() {
+  document.getElementById('profile-dropdown')?.classList.remove('open');
 }
 
 function logout() {
@@ -150,10 +160,18 @@ function renderAuthState() {
     const badge = user.plan === 'premium' ? 'premium' : 'free';
     const badgeText = user.plan === 'premium' ? 'Premium' : 'Ücretsiz';
     const simInfo = !isPremium() ? ` · ${SIM_LIMIT - getSimCount()} seans kaldı` : '';
-    navEl.innerHTML = `<div class="nav-user">
+    navEl.innerHTML = `<div class="nav-user" onclick="toggleProfileMenu()" id="nav-user-btn">
       <span class="nav-user-name">${esc(user.name)}</span>
       <span class="plan-badge ${badge}">${badgeText}${simInfo}</span>
-      <button class="btn" onclick="logout()" style="font-size:9px;padding:5px 12px;">Çıkış</button>
+    </div>
+    <div class="profile-dropdown" id="profile-dropdown">
+      <div class="profile-dropdown-name">${esc(user.name)}</div>
+      <div class="profile-dropdown-email">${esc(user.email || '')}</div>
+      <div class="profile-dropdown-divider"></div>
+      <button class="profile-dropdown-item" onclick="closeProfileMenu();showView('progress')">Gelişim Takibi</button>
+      <button class="profile-dropdown-item" onclick="closeProfileMenu();showView('history')">Seans Geçmişi</button>
+      <div class="profile-dropdown-divider"></div>
+      <button class="profile-dropdown-item danger" onclick="closeProfileMenu();logout()">Çıkış Yap</button>
     </div>`;
     if (heroEl) heroEl.innerHTML = `
       <button class="btn primary" onclick="showView('session-select')">Simülasyona Başla →</button>
@@ -465,6 +483,8 @@ function showView(name) {
   if (name === 'difficult') renderScenarios();
   if (name === 'case') renderCaseFields();
   if (name === 'metaphor') { switchMetaphorTab('learn'); }
+  if (name === 'progress') renderProgressDashboard();
+  if (name === 'history') renderSessionHistory();
 }
 
 // ── PROFILES ───────────────────────────────────────────────────────────────
@@ -573,7 +593,7 @@ async function saveSession({ module, profile_id, messages, supervisor_feedback, 
   }
 }
 
-async function requestSupervisorFeedback() {
+async function requestSupervisorFeedback(isFinal = false) {
   if (state.messages.length < 2) { alert('En az birkaç mesaj gerekli.'); return; }
   document.getElementById('supervisor-panel').classList.add('open');
   document.getElementById('supervisor-body').innerHTML = `<div style="font-size:13px;color:var(--text3);font-style:italic;text-align:center;margin-top:40px;">Seans analiz ediliyor...</div>`;
@@ -582,13 +602,15 @@ async function requestSupervisorFeedback() {
     const cleaned = data.feedback.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(cleaned);
     renderSupervisorFeedback(parsed);
-    saveSession({
-      module: 'simulation',
-      profile_id: state.currentProfile?.id,
-      messages: state.messages,
-      supervisor_feedback: cleaned,
-      score: computeFeedbackScore(parsed),
-    });
+    if (isFinal) {
+      await saveSession({
+        module: 'simulation',
+        profile_id: state.currentProfile?.id,
+        messages: state.messages,
+        supervisor_feedback: cleaned,
+        score: computeFeedbackScore(parsed),
+      });
+    }
   } catch (e) {
     document.getElementById('supervisor-body').innerHTML = `<div style="color:var(--danger);font-size:13px;padding:20px;">Hata: ${esc(e.message)}</div>`;
   }
@@ -609,7 +631,7 @@ function renderSupervisorFeedback(fb) {
 }
 
 function closeSupervisor() { document.getElementById('supervisor-panel').classList.remove('open'); }
-function endSession() { if (confirm('Seansı bitirmek istiyor musun?')) requestSupervisorFeedback(); }
+function endSession() { if (confirm('Seansı bitirmek istiyor musun?')) requestSupervisorFeedback(true); }
 
 // ── ACADEMY ────────────────────────────────────────────────────────────────
 async function loadAcademy(key, name) {
@@ -846,6 +868,12 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
 
+document.addEventListener('click', e => {
+  const dd  = document.getElementById('profile-dropdown');
+  const btn = document.getElementById('nav-user-btn');
+  if (dd && !dd.contains(e.target) && !btn?.contains(e.target)) closeProfileMenu();
+});
+
 // iOS klavye açılınca input-area kaybolmasın
 if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', () => {
@@ -855,6 +883,232 @@ if (window.visualViewport) {
     if (inputArea) inputArea.style.transform = `translateY(-${offset}px)`;
     if (difficultInput) difficultInput.style.transform = `translateY(-${offset}px)`;
   });
+}
+
+// ── SESSION HISTORY ───────────────────────────────────────────────────────────
+
+async function renderSessionHistory() {
+  const container = document.getElementById('history-inner');
+  const meta      = document.getElementById('history-meta');
+  if (!container) return;
+  container.innerHTML = `<div style="font-size:13px;color:var(--text3);text-align:center;padding:48px;">Yükleniyor...</div>`;
+
+  const token = getToken();
+  try {
+    const res = await fetch('/api/sessions?limit=50', { headers: { Authorization: `Bearer ${token}` } });
+    const { sessions = [] } = await res.json();
+    if (meta) meta.textContent = sessions.length ? `${sessions.length} seans` : '';
+
+    if (sessions.length === 0) {
+      container.innerHTML = `<div class="sh-empty">Henüz tamamlanan seans yok.<br>İlk simülasyonu bitirince burada görünecek.</div>`;
+      return;
+    }
+
+    container.innerHTML = sessions.map(s => {
+      const label = MODULE_LABELS[s.module] || s.module;
+      const date  = new Date(s.created_at).toLocaleDateString('tr-TR');
+      const hasFb = !!s.supervisor_feedback;
+      return `
+        <div class="sh-row" onclick="openSessionDetail('${esc(s.id)}')">
+          <div class="sh-row-left">
+            <div class="sh-module">${esc(label)}</div>
+            ${s.profile_id ? `<div class="sh-profile">${esc(s.profile_id)}</div>` : ''}
+          </div>
+          <div class="sh-row-right">
+            ${hasFb ? `<span class="sh-badge">Süpervizör notu var</span>` : ''}
+            <span class="sh-date">${date}</span>
+            <button class="sh-delete-btn" onclick="deleteSession(event,'${esc(s.id)}')">✕</button>
+          </div>
+        </div>`;
+    }).join('');
+  } catch {
+    container.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:24px;">Veriler yüklenemedi.</div>`;
+  }
+}
+
+async function openSessionDetail(id) {
+  const container = document.getElementById('history-inner');
+  container.innerHTML = `<div style="font-size:13px;color:var(--text3);text-align:center;padding:48px;">Yükleniyor...</div>`;
+
+  const token = getToken();
+  try {
+    const res = await fetch(`/api/sessions/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+    const { session } = await res.json();
+    const label = MODULE_LABELS[session.module] || session.module;
+    const date  = new Date(session.created_at).toLocaleDateString('tr-TR');
+    const fb    = parseSupervisorFeedback(session.supervisor_feedback);
+    const msgs  = session.messages_json || [];
+
+    const transcriptHTML = msgs.length
+      ? msgs.map(m => {
+          const isUser = m.role === 'user';
+          return `<div class="sh-msg ${isUser ? 'therapist' : 'client'}">
+            <div class="sh-msg-label">${isUser ? 'Terapist (Sen)' : esc(label)}</div>
+            <div class="sh-msg-bubble">${esc(m.content)}</div>
+          </div>`;
+        }).join('')
+      : `<div style="font-size:13px;color:var(--text3);">Transkript kaydedilmemiş.</div>`;
+
+    const feedbackHTML = fb ? `
+      ${fb.guclu_yanlar?.length ? `
+        <div class="sh-fb-section">
+          <div class="sh-fb-title good">+ Güçlü Hamleler</div>
+          <ul class="sh-fb-list">${fb.guclu_yanlar.map(i => `<li>${esc(i)}</li>`).join('')}</ul>
+        </div>` : ''}
+      ${fb.act_firsatlari?.length ? `
+        <div class="sh-fb-section">
+          <div class="sh-fb-title gap">△ Kaçırılan ACT Fırsatları</div>
+          <ul class="sh-fb-list">${fb.act_firsatlari.map(i => `<li>${esc(i)}</li>`).join('')}</ul>
+        </div>` : ''}
+      ${fb.somut_oneri ? `
+        <div class="sh-fb-section">
+          <div class="sh-fb-title next">→ Somut Öneri</div>
+          <div class="sh-fb-text">${esc(fb.somut_oneri)}</div>
+        </div>` : ''}
+      ${fb.sonraki_seans_odagi ? `
+        <div class="sh-fb-section">
+          <div class="sh-fb-title next">→ Sonraki Seans Odağı</div>
+          <div class="sh-fb-text">${esc(fb.sonraki_seans_odagi)}</div>
+        </div>` : ''}
+      ${fb.genel_yorum ? `
+        <div class="sh-fb-section">
+          <div class="sh-fb-title gap">Genel Yorum</div>
+          <div class="sh-fb-text">${esc(fb.genel_yorum)}</div>
+        </div>` : ''}
+    ` : `<div style="font-size:13px;color:var(--text3);">Bu seans için süpervizör notu yok.</div>`;
+
+    container.innerHTML = `
+      <div class="sh-detail-wrap">
+        <button class="sh-back" onclick="renderSessionHistory()">← Geri</button>
+        <div class="sh-detail-header">
+          <div class="sh-detail-title">${esc(label)}</div>
+          <div class="sh-detail-date">${date}</div>
+        </div>
+
+        <div class="sh-detail-section-title">Süpervizör Geri Bildirimi</div>
+        <div class="sh-feedback-wrap">${feedbackHTML}</div>
+
+        <div class="sh-detail-section-title" style="margin-top:32px;">Seans Transkripti</div>
+        <div class="sh-transcript">${transcriptHTML}</div>
+      </div>`;
+  } catch {
+    container.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:24px;">Seans yüklenemedi.</div>`;
+  }
+}
+
+async function deleteSession(e, id) {
+  e.stopPropagation();
+  if (!confirm('Bu seansı silmek istediğine emin misin?')) return;
+  const token = getToken();
+  try {
+    await fetch(`/api/sessions/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    renderSessionHistory();
+  } catch {
+    alert('Seans silinemedi.');
+  }
+}
+
+// ── PROGRESS DASHBOARD ────────────────────────────────────────────────────────
+
+const MODULE_LABELS = {
+  session: 'Simülasyon Lab',
+  supervisor: 'Süpervizör',
+  academy: 'Akademi Lab',
+  difficult: 'Zor Anlar Lab',
+  metaphor: 'Metafor Lab',
+  'case-formulation': 'Vaka Formülasyon',
+};
+
+function parseSupervisorFeedback(raw) {
+  if (!raw) return null;
+  try { return JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+  catch { return null; }
+}
+
+const ACT_PROCESS_META = [
+  { key: 'acceptance',      label: 'Kabul',            subtitle: 'Zor duyguyla kalma kapasitesi' },
+  { key: 'defusion',        label: 'Defusion',          subtitle: 'Düşüncelerle ilişkilenme biçimi' },
+  { key: 'presence',        label: 'Şimdiki An',        subtitle: 'Anda kalma ve sessizlik toleransı' },
+  { key: 'values',          label: 'Değerler',          subtitle: 'Değer keşfi çalışması' },
+  { key: 'committedAction', label: 'Kararlı Eylem',     subtitle: 'Taahhüt ve somut adım çalışması' },
+];
+
+async function renderProgressDashboard() {
+  const container = document.getElementById('progress-inner');
+  if (!container) return;
+  container.innerHTML = `<div style="font-size:13px;color:var(--text3);text-align:center;padding:48px;">Yükleniyor...</div>`;
+
+  const token = getToken();
+  try {
+    const [progRes, sessRes, profileRes] = await Promise.all([
+      fetch('/api/progress',            { headers: { Authorization: `Bearer ${token}` } }),
+      fetch('/api/sessions?limit=5',    { headers: { Authorization: `Bearer ${token}` } }),
+      fetch('/api/growth-profile',      { headers: { Authorization: `Bearer ${token}` } }),
+    ]);
+    const { progress = [] } = await progRes.json();
+    const { sessions = [] } = await sessRes.json();
+    const { profile }       = await profileRes.json();
+
+    const totalSessions = progress.reduce((s, p) => s + (p.total_sessions || 0), 0);
+
+    const noDataNote = `<div class="gp-empty">İlk simülasyondan sonra oluşacak.</div>`;
+
+    container.innerHTML = `
+      <div class="gp-wrap">
+
+        <!-- Üst istatistikler -->
+        <div class="gp-top-row">
+          <div class="gp-stat">
+            <div class="gp-stat-num">${totalSessions}</div>
+            <div class="gp-stat-label">Toplam Pratik</div>
+          </div>
+          <div class="gp-stat">
+            <div class="gp-stat-num">${sessions.length > 0 ? new Date(sessions[0].created_at).toLocaleDateString('tr-TR') : '—'}</div>
+            <div class="gp-stat-label">Son Pratik</div>
+          </div>
+          <div class="gp-style-block">
+            <div class="gp-block-title">Terapötik Stil</div>
+            <div class="gp-style-tags">
+              ${profile?.therapeuticStyle?.length
+                ? profile.therapeuticStyle.map(s => `<span class="gp-style-tag">${esc(s)}</span>`).join('')
+                : '<span class="gp-style-tag muted">Henüz veri yok</span>'}
+            </div>
+          </div>
+        </div>
+
+        <!-- Terapötik Esneklik Haritası (AI gözlemler) -->
+        <div class="gp-section-title" style="margin-top:36px;">Terapötik Esneklik Haritası</div>
+        <div class="gp-act-grid">
+          ${ACT_PROCESS_META.map(({ key, label, subtitle }) => {
+            const obs = profile?.actProcesses?.[key];
+            return `
+              <div class="gp-act-card">
+                <div class="gp-act-label">${label}</div>
+                <div class="gp-act-subtitle">${subtitle}</div>
+                <div class="gp-act-obs">${obs && obs !== 'Henüz veri yok' ? esc(obs) : '<span class="gp-empty-inline">İlk simülasyondan sonra oluşacak.</span>'}</div>
+              </div>`;
+          }).join('')}
+        </div>
+
+        <!-- Son Klinik Gözlemler -->
+        <div class="gp-section-title" style="margin-top:36px;">Son Klinik Gözlemler</div>
+        ${profile?.clinicalObservations?.length
+          ? profile.clinicalObservations.map(obs =>
+              `<div class="gp-observation">"${esc(obs)}"</div>`
+            ).join('')
+          : noDataNote}
+
+        <!-- Zorlanılan Alanlar -->
+        ${profile?.challengeAreas?.length ? `
+          <div class="gp-section-title" style="margin-top:32px;">Zorlanılan Alanlar</div>
+          <div class="gp-challenges">
+            ${profile.challengeAreas.map(a => `<div class="gp-challenge-item">△ ${esc(a)}</div>`).join('')}
+          </div>` : ''}
+
+      </div>`;
+  } catch (e) {
+    container.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:24px;">Veriler yüklenemedi.</div>`;
+  }
 }
 
 // Başlangıç — statik veri + kullanıcı paralel yüklenir, sonra UI render edilir
