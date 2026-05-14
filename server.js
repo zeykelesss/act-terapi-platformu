@@ -444,7 +444,12 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`✓ ACT Platform çalışıyor → http://localhost:${PORT}`);
-});
+// Vercel'de listen çağrılmaz, lokal geliştirmede çalışır
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => {
+    console.log(`✓ ACT Platform çalışıyor → http://localhost:${PORT}`);
+  });
+}
+
+export default app;
