@@ -70,7 +70,7 @@ Seans transkriptini analiz et. SADECE bu JSON formatında yanıt ver:
   "guclu_yanlar": ["spesifik örnek 1", "spesifik örnek 2"],
   "act_firsatlari": ["hangi anda ne yapılabilirdi 1", "fırsat 2"],
   "hatalar": ["ACT'e aykırı müdahale 1", "hata 2"],
-  "somut_oneri": "Şunu şöyle söyleyebilirdin: '...'",
+  "somut_oneri": "Şunu şöyle söyleyebilirdin (tek tırnak kullan): '...'",
   "workability_kullanimi": "Terapist workability sorusunu kullandı mı?",
   "dead_persons_goal": "Dead person's goal fark edilip living person's goal'a çevrildi mi?",
   "act_surecler": {
@@ -94,37 +94,34 @@ DEĞERLENDİRME KRİTERLERİN:
 - Terapötik ilişki nasıldı?
 
 Puanlar 0-10. Net ve dürüst ol. Sadece JSON.
+ÖNEMLI: String değerlerin içinde çift tırnak (") kullanma — gerekirse tek tırnak (') kullan.
 `,
 
   academy: (topic) => `
 Sen ACT uzmanı bir psikolog ve eğitimcisin. Russ Harris'in "ACT Made Simple" kitabını temel alarak "${topic}" konusunu öğreteceksin.
 
-SADECE bu JSON formatında yanıt ver (markdown backtick kullanma):
+SADECE bu JSON formatında yanıt ver (markdown backtick kullanma). Her alan maksimum 2-3 cümle olsun, özlü yaz:
 
 {
-  "baslik": "...",
-  "basit_aciklama": "Gündelik dilde açıkla",
-  "klinik_aciklama": "ACT teorisiyle açıkla",
-  "act_cbt_farki": "Bu konuda ACT ile CBT'nin temel farkı",
-  "fuzyon_kacinma_iliskisi": "Bu süreç fusion ve avoidance ile nasıl ilişkili?",
+  "baslik": "Kısa başlık",
+  "basit_aciklama": "Gündelik dilde max 2 cümle",
+  "klinik_aciklama": "ACT teorisiyle max 3 cümle",
+  "act_cbt_farki": "Temel fark max 2 cümle",
   "terapist_hatalari": ["hata 1", "hata 2", "hata 3"],
   "mini_egzersiz": {
     "baslik": "Egzersiz adı",
-    "amac": "Ne sağlar?",
-    "talimat": "Adım adım uygulama",
-    "sure": "5-10 dakika"
+    "talimat": "Adım adım, kısa",
+    "sure": "X dakika"
   },
   "kisa_vaka": {
-    "danisan_profili": "Kısa tanıtım",
-    "fusion_veya_avoidance": "Danışanın tam söylediği şey",
-    "terapist_mudahalesi": "ACT uyumlu müdahale",
-    "danisan_tepkisi": "Gerçekçi, mükemmel olmayan tepki",
-    "devam": "Terapist ne yapabilir?"
-  },
-  "workability_sorulari": ["workability sorusu 1", "workability sorusu 2"]
+    "danisan": "İsim, yaş, meslek",
+    "sorun": "Bir cümle sorun",
+    "mudahale": "Terapistin tam cümlesi",
+    "sonuc": "Danışanın tepkisi"
+  }
 }
 
-Türkçe, net ve klinik olarak doğru ol. Sadece JSON.
+Sadece JSON. Backtick yok.
 `,
 
   difficultMoment: (scenario) => `

@@ -57,6 +57,22 @@ function ai() {
   return _anthropic;
 }
 
+// String içindeki literal satır sonlarını temizleyerek Claude JSON'larını parse eder
+function parseClaudeJSON(raw) {
+  let s = (raw || '').replace(/```json\s*|```\s*/g, '').trim();
+  let out = '', inStr = false, esc = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (esc)                               { out += c; esc = false; continue; }
+    if (c === '\\' && inStr)              { out += c; esc = true;  continue; }
+    if (c === '"')                         { inStr = !inStr; out += c; continue; }
+    if (inStr && (c === '\n' || c === '\r')) { out += ' '; continue; }
+    out += c;
+  }
+  out = out.replace(/,(\s*[}\]])/g, '$1');
+  return JSON.parse(out);
+}
+
 // Ortak Anthropic çağrısı — OpenAI formatındaki messages'ı Claude formatına çevirir
 async function chat({ system, messages, model = "claude-haiku-4-5-20251001", max_tokens = 1024, temperature = 0.8 }) {
   const claudeMessages = messages.map(m => ({ role: m.role, content: m.content }));
@@ -199,7 +215,7 @@ app.post("/api/supervisor", requireAuth, async (req, res) => {
       system: PROMPTS.supervisor(clientProfile),
       messages: [{ role: "user", content: `Seans transkripti:\n\n${transcript}` }],
       temperature: 0.4,
-      max_tokens: 1024,
+      max_tokens: 1800,
     });
     res.json({ feedback });
   } catch (e) {
@@ -310,17 +326,22 @@ app.get("/api/progress", requireAuth, async (req, res) => {
   res.json({ progress: data });
 });
 
-// POST /api/academy — ACT Akademi içeriği (free)
+// POST /api/academy — ACT Akademi içeriği (free, sunucu yeniden başlayana kadar cache'lenir)
+const _academyCache = new Map();
 app.post("/api/academy", requireAuth, async (req, res) => {
   const { topic } = req.body;
+  if (_academyCache.has(topic)) {
+    return res.json({ content: _academyCache.get(topic) });
+  }
   try {
     const content = await chat({
       model: "claude-haiku-4-5-20251001",
       system: PROMPTS.academy(topic),
       messages: [{ role: "user", content: `${topic} konusunda eğitim içeriği oluştur.` }],
       temperature: 0.4,
-      max_tokens: 1500,
+      max_tokens: 2048,
     });
+    _academyCache.set(topic, content);
     res.json({ content });
   } catch (e) {
     console.error(e);
@@ -410,8 +431,7 @@ app.get("/api/growth-profile", requireAuth, async (req, res) => {
       temperature: 0.3,
       max_tokens: 1500,
     });
-    const cleaned = raw.replace(/```json|```/g, "").trim();
-    const profile = JSON.parse(cleaned);
+    const profile = parseClaudeJSON(raw);
     res.json({ profile });
   } catch (e) {
     console.error("growth-profile hatası:", e);

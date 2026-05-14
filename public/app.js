@@ -186,8 +186,52 @@ function renderAuthState() {
   }
 }
 
+// ── JSON HELPER ─────────────────────────────────────────────────────────────
+// Claude bazen string içine gerçek satır sonu yazar → standart JSON.parse kırılır
+function parseClaudeJSON(raw) {
+  let s = (raw || '').replace(/```json\s*|```\s*/g, '').trim();
+  // Char-by-char: string içindeki literal \n / \r'ları boşluğa çevir
+  let out = '', inStr = false, esc = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (esc)                               { out += c; esc = false; continue; }
+    if (c === '\\' && inStr)              { out += c; esc = true;  continue; }
+    if (c === '"')                         { inStr = !inStr; out += c; continue; }
+    if (inStr && (c === '\n' || c === '\r')) { out += ' '; continue; }
+    out += c;
+  }
+  // Trailing comma temizle: ,} veya ,]
+  out = out.replace(/,(\s*[}\]])/g, '$1');
+  return JSON.parse(out);
+}
+
 // ── STATE ──────────────────────────────────────────────────────────────────
 const state = { currentProfile: null, messages: [], totalTherapistMsgs: 0 };
+
+// ── DRAFT PERSISTENCE ───────────────────────────────────────────────────────
+function draftKey(profileId) {
+  const u = getUser();
+  return `act_draft_${u?.id || 'anon'}_${profileId}`;
+}
+function saveDraft() {
+  if (!state.currentProfile || !state.messages.length) return;
+  try {
+    localStorage.setItem(draftKey(state.currentProfile.id), JSON.stringify({
+      messages: state.messages,
+      totalTherapistMsgs: state.totalTherapistMsgs,
+      savedAt: Date.now(),
+    }));
+  } catch (_) {}
+}
+function loadDraft(profileId) {
+  try {
+    const raw = localStorage.getItem(draftKey(profileId));
+    return raw ? JSON.parse(raw) : null;
+  } catch (_) { return null; }
+}
+function clearDraft(profileId) {
+  try { localStorage.removeItem(draftKey(profileId)); } catch (_) {}
+}
 
 // METAFOR_DATA artık /api/metaphors'tan geliyor (data/metaphors.js)
 let METAPHOR_DATA = [];
@@ -524,21 +568,67 @@ function filterProfiles(level) {
 }
 
 // ── SESSION ────────────────────────────────────────────────────────────────
-function startSession(id) {
-  if (!isPremium() && getSimCount() >= SIM_LIMIT) { openUpgrade(); return; }
-  if (!isPremium()) incSimCount();
-  renderAuthState();
-  const p = PROFILES.find(x => x.id === id);
-  state.currentProfile = p;
-  state.messages = [];
-  state.totalTherapistMsgs = 0;
+function _setupSessionHeader(p) {
   document.getElementById('client-name-label').textContent = `${p.name}, ${p.age}`;
   document.getElementById('client-issue-label').textContent = p.issue;
   document.getElementById('client-avatar').textContent = p.name[0];
+}
+
+function _initFreshSession() {
+  state.messages = [];
+  state.totalTherapistMsgs = 0;
   document.getElementById('msg-counter').textContent = '0 mesaj';
   document.getElementById('supervisor-hint').style.display = 'none';
   document.getElementById('messages').innerHTML = `<div class="msg system"><div class="msg-bubble">Seans başladı. Terapist olarak ilk adımı sen at.</div></div>`;
   showView('session');
+}
+
+function startSession(id) {
+  const p = PROFILES.find(x => x.id === id);
+  state.currentProfile = p;
+  _setupSessionHeader(p);
+
+  const draft = loadDraft(id);
+  if (draft && draft.messages.length >= 2) {
+    showView('session');
+    const date = new Date(draft.savedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+    document.getElementById('messages').innerHTML = `
+      <div class="resume-prompt">
+        <div class="resume-title">${esc(p.name)} ile devam eden seans</div>
+        <div class="resume-meta">${draft.totalTherapistMsgs} mesaj · ${date}</div>
+        <div class="resume-actions">
+          <button class="btn primary" onclick="resumeSession()">Kaldığım Yerden Devam Et</button>
+          <button class="btn" onclick="newSession()">Yeni Seans Başlat</button>
+        </div>
+      </div>`;
+    document.getElementById('msg-counter').textContent = `${draft.totalTherapistMsgs} mesaj`;
+    document.getElementById('supervisor-hint').style.display = 'none';
+    return;
+  }
+
+  if (!isPremium() && getSimCount() >= SIM_LIMIT) { openUpgrade(); return; }
+  if (!isPremium()) incSimCount();
+  renderAuthState();
+  _initFreshSession();
+}
+
+function resumeSession() {
+  const draft = loadDraft(state.currentProfile.id);
+  if (!draft) { _initFreshSession(); return; }
+  state.messages = draft.messages;
+  state.totalTherapistMsgs = draft.totalTherapistMsgs;
+  document.getElementById('msg-counter').textContent = `${state.totalTherapistMsgs} mesaj`;
+  document.getElementById('supervisor-hint').style.display = state.totalTherapistMsgs >= 4 ? 'inline' : 'none';
+  document.getElementById('messages').innerHTML = `<div class="msg system"><div class="msg-bubble">Seans kaldığı yerden devam ediyor.</div></div>`;
+  state.messages.forEach(m => addMessage(m.role === 'user' ? 'therapist' : 'client', m.content));
+}
+
+function newSession() {
+  if (!isPremium() && getSimCount() >= SIM_LIMIT) { openUpgrade(); return; }
+  if (!isPremium()) incSimCount();
+  renderAuthState();
+  clearDraft(state.currentProfile.id);
+  _initFreshSession();
 }
 
 async function sendMessage() {
@@ -557,6 +647,7 @@ async function sendMessage() {
     const data = await api('session', { messages: state.messages, clientProfile: state.currentProfile });
     state.messages.push({ role: 'assistant', content: data.reply });
     addMessage('client', data.reply);
+    saveDraft();
   } catch (e) {
     addMessage('system', 'Hata: ' + e.message);
   } finally {
@@ -599,17 +690,17 @@ async function requestSupervisorFeedback(isFinal = false) {
   document.getElementById('supervisor-body').innerHTML = `<div style="font-size:13px;color:var(--text3);font-style:italic;text-align:center;margin-top:40px;">Seans analiz ediliyor...</div>`;
   try {
     const data = await api('supervisor', { messages: state.messages, clientProfile: state.currentProfile });
-    const cleaned = data.feedback.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(cleaned);
+    const parsed = parseClaudeJSON(data.feedback);
     renderSupervisorFeedback(parsed);
     if (isFinal) {
       await saveSession({
         module: 'simulation',
         profile_id: state.currentProfile?.id,
         messages: state.messages,
-        supervisor_feedback: cleaned,
+        supervisor_feedback: data.feedback,
         score: computeFeedbackScore(parsed),
       });
+      clearDraft(state.currentProfile?.id);
     }
   } catch (e) {
     document.getElementById('supervisor-body').innerHTML = `<div style="color:var(--danger);font-size:13px;padding:20px;">Hata: ${esc(e.message)}</div>`;
@@ -640,7 +731,7 @@ async function loadAcademy(key, name) {
   setLoading(true);
   try {
     const data = await api('academy', { topic: key });
-    const d = JSON.parse(data.content.replace(/```json|```/g, '').trim());
+    const d = parseClaudeJSON(data.content);
     inner.innerHTML = `
       <div class="academy-content">
         <div class="back-link" onclick="renderHexaflex()">← ACT Hexaflex</div>
@@ -662,8 +753,6 @@ async function loadAcademy(key, name) {
 
 // ── ZOR ANLAR LAB ──────────────────────────────────────────────────────────
 const dState = { scenario: null, index: 0, messages: [], therapistCount: 0 };
-const SUP_TRIGGER = 3;
-
 function renderScenarios() { startDifficultScene(0); }
 
 function startDifficultScene(index) {
@@ -683,7 +772,6 @@ function startDifficultScene(index) {
           <span class="difficult-ctrl-sep">·</span>
           <button class="difficult-ctrl-btn" onclick="randomDifficultScene()">Rastgele</button>
           <span class="difficult-turn-info" id="d-turn"></span>
-          <button class="difficult-sup-btn" id="d-sup-btn" onclick="getDifficultSupervisor()">Süpervizör</button>
         </div>
       </div>
       <div class="difficult-conv" id="d-conv"></div>
@@ -698,9 +786,13 @@ function startDifficultScene(index) {
           oninput="autoResize(this)"></textarea>
         <button class="difficult-send" id="d-send" onclick="sendDifficultMsg()">gönder →</button>
       </div>
+      <div class="difficult-end-row">
+        <button class="difficult-end-btn" id="d-end-btn" onclick="getDifficultSupervisor()" disabled>
+          Süpervizörden Geri Bildirim Al
+        </button>
+      </div>
     </div>`;
 
-  // Pre-populate with client's opening message
   if (s.opening) {
     dState.messages.push({ role: 'client', text: s.opening });
     updateDifficultUI();
@@ -710,7 +802,7 @@ function startDifficultScene(index) {
 function updateDifficultUI() {
   const conv = document.getElementById('d-conv');
   const turnEl = document.getElementById('d-turn');
-  const supBtn = document.getElementById('d-sup-btn');
+  const endBtn = document.getElementById('d-end-btn');
   if (!conv) return;
 
   conv.innerHTML = dState.messages.map(m => `
@@ -721,7 +813,7 @@ function updateDifficultUI() {
   conv.scrollTop = conv.scrollHeight;
 
   if (turnEl) turnEl.textContent = dState.therapistCount > 0 ? `${dState.therapistCount}. yanıt` : '';
-  if (supBtn) supBtn.style.display = dState.therapistCount >= SUP_TRIGGER ? '' : 'none';
+  if (endBtn) endBtn.disabled = dState.therapistCount < 1;
 }
 
 async function sendDifficultMsg() {
@@ -777,8 +869,7 @@ async function getDifficultSupervisor() {
       content: m.text
     }));
     const data = await api('supervisor', { messages: apiMsgs, clientProfile: dState.scenario.profile });
-    const cleaned = data.feedback.replace(/```json|```/g, '').trim();
-    renderSupervisorFeedback(JSON.parse(cleaned));
+    renderSupervisorFeedback(parseClaudeJSON(data.feedback));
   } catch(e) {
     document.getElementById('supervisor-body').innerHTML = `<div style="color:var(--danger);font-size:13px;padding:20px;">Hata: ${esc(e.message)}</div>`;
   }
@@ -798,7 +889,7 @@ async function loadMetaphor() {
   setLoading(true);
   try {
     const data = await api('metaphor', { metaphorName: name, userScenario: scenario });
-    const fb = JSON.parse(data.guidance.replace(/```json|```/g, '').trim());
+    const fb = parseClaudeJSON(data.guidance);
     result.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div class="feedback-section info"><div class="feedback-section-title">Metafor Açıklaması</div><div class="feedback-text">${esc(fb.metafor_aciklamasi)}</div></div>
@@ -835,7 +926,7 @@ async function submitCase() {
   setLoading(true);
   try {
     const data = await api('case-formulation', { formulation });
-    const fb = JSON.parse(data.feedback.replace(/```json|```/g, '').trim());
+    const fb = parseClaudeJSON(data.feedback);
     result.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:12px;">
         <div class="feedback-section info"><div class="feedback-section-title">Genel Değerlendirme</div><div class="feedback-text">${esc(fb.genel_degerlendirme)}</div></div>
@@ -1021,7 +1112,7 @@ const MODULE_LABELS = {
 
 function parseSupervisorFeedback(raw) {
   if (!raw) return null;
-  try { return JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+  try { return parseClaudeJSON(raw); }
   catch { return null; }
 }
 
@@ -1040,14 +1131,13 @@ async function renderProgressDashboard() {
 
   const token = getToken();
   try {
-    const [progRes, sessRes, profileRes] = await Promise.all([
-      fetch('/api/progress',            { headers: { Authorization: `Bearer ${token}` } }),
-      fetch('/api/sessions?limit=5',    { headers: { Authorization: `Bearer ${token}` } }),
-      fetch('/api/growth-profile',      { headers: { Authorization: `Bearer ${token}` } }),
+    const [progRes, sessRes] = await Promise.all([
+      fetch('/api/progress',         { headers: { Authorization: `Bearer ${token}` } }),
+      fetch('/api/sessions?limit=5', { headers: { Authorization: `Bearer ${token}` } }),
     ]);
     const { progress = [] } = await progRes.json();
     const { sessions = [] } = await sessRes.json();
-    const { profile }       = await profileRes.json();
+    const profile = null; // growth-profile ayrı yüklenir
 
     const totalSessions = progress.reduce((s, p) => s + (p.total_sessions || 0), 0);
 
@@ -1068,44 +1158,75 @@ async function renderProgressDashboard() {
           </div>
           <div class="gp-style-block">
             <div class="gp-block-title">Terapötik Stil</div>
-            <div class="gp-style-tags">
-              ${profile?.therapeuticStyle?.length
-                ? profile.therapeuticStyle.map(s => `<span class="gp-style-tag">${esc(s)}</span>`).join('')
-                : '<span class="gp-style-tag muted">Henüz veri yok</span>'}
+            <div class="gp-style-tags" id="gp-style-tags">
+              <span class="gp-style-tag muted gp-loading-ai">Yükleniyor…</span>
             </div>
           </div>
         </div>
 
         <!-- Terapötik Esneklik Haritası (AI gözlemler) -->
         <div class="gp-section-title" style="margin-top:36px;">Terapötik Esneklik Haritası</div>
-        <div class="gp-act-grid">
-          ${ACT_PROCESS_META.map(({ key, label, subtitle }) => {
-            const obs = profile?.actProcesses?.[key];
-            return `
+        <div class="gp-act-grid" id="gp-act-grid">
+          ${ACT_PROCESS_META.map(({ label, subtitle }) => `
               <div class="gp-act-card">
                 <div class="gp-act-label">${label}</div>
                 <div class="gp-act-subtitle">${subtitle}</div>
-                <div class="gp-act-obs">${obs && obs !== 'Henüz veri yok' ? esc(obs) : '<span class="gp-empty-inline">İlk simülasyondan sonra oluşacak.</span>'}</div>
-              </div>`;
-          }).join('')}
+                <div class="gp-act-obs"><span class="gp-empty-inline gp-loading-ai">Analiz yükleniyor…</span></div>
+              </div>`).join('')}
         </div>
 
         <!-- Son Klinik Gözlemler -->
         <div class="gp-section-title" style="margin-top:36px;">Son Klinik Gözlemler</div>
-        ${profile?.clinicalObservations?.length
-          ? profile.clinicalObservations.map(obs =>
-              `<div class="gp-observation">"${esc(obs)}"</div>`
-            ).join('')
-          : noDataNote}
+        <div id="gp-observations"><div class="gp-empty gp-loading-ai">Analiz yükleniyor…</div></div>
 
         <!-- Zorlanılan Alanlar -->
-        ${profile?.challengeAreas?.length ? `
-          <div class="gp-section-title" style="margin-top:32px;">Zorlanılan Alanlar</div>
-          <div class="gp-challenges">
-            ${profile.challengeAreas.map(a => `<div class="gp-challenge-item">△ ${esc(a)}</div>`).join('')}
-          </div>` : ''}
+        <div id="gp-challenges"></div>
 
       </div>`;
+
+    // Growth profile'ı arka planda yükle
+    fetch('/api/growth-profile', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(({ profile: gp }) => {
+        if (!gp) {
+          container.querySelectorAll('.gp-loading-ai').forEach(el => { el.textContent = 'İlk simülasyondan sonra oluşacak.'; });
+          return;
+        }
+        // ACT grid güncelle
+        const grid = document.getElementById('gp-act-grid');
+        if (grid) {
+          grid.innerHTML = ACT_PROCESS_META.map(({ key, label, subtitle }) => {
+            const obs = gp.actProcesses?.[key];
+            return `<div class="gp-act-card">
+              <div class="gp-act-label">${label}</div>
+              <div class="gp-act-subtitle">${subtitle}</div>
+              <div class="gp-act-obs">${obs && obs !== 'Henüz veri yok' ? esc(obs) : '<span class="gp-empty-inline">İlk simülasyondan sonra oluşacak.</span>'}</div>
+            </div>`;
+          }).join('');
+        }
+        // Terapötik stil güncelle
+        const styleEl = document.getElementById('gp-style-tags');
+        if (styleEl && gp.therapeuticStyle?.length) {
+          styleEl.innerHTML = gp.therapeuticStyle.map(s => `<span class="gp-style-tag">${esc(s)}</span>`).join('');
+        }
+        // Klinik gözlemler
+        const obsEl = document.getElementById('gp-observations');
+        if (obsEl) {
+          obsEl.innerHTML = gp.clinicalObservations?.length
+            ? gp.clinicalObservations.map(o => `<div class="gp-observation">"${esc(o)}"</div>`).join('')
+            : `<div class="gp-empty">İlk simülasyondan sonra oluşacak.</div>`;
+        }
+        // Zorlanılan alanlar
+        const chalEl = document.getElementById('gp-challenges');
+        if (chalEl && gp.challengeAreas?.length) {
+          chalEl.innerHTML = `<div class="gp-section-title" style="margin-top:32px;">Zorlanılan Alanlar</div>
+            <div class="gp-challenges">${gp.challengeAreas.map(a => `<div class="gp-challenge-item">△ ${esc(a)}</div>`).join('')}</div>`;
+        }
+      })
+      .catch(() => {
+        container.querySelectorAll('.gp-loading-ai').forEach(el => { el.textContent = 'Yüklenemedi.'; });
+      });
+
   } catch (e) {
     container.innerHTML = `<div style="color:var(--danger);font-size:13px;padding:24px;">Veriler yüklenemedi.</div>`;
   }
